@@ -9,7 +9,7 @@ Donate link: http://dsgnwrks.pro/give/
 Version: 1.0
 */
 
-define( 'DSTWEET_ID', 'dsgnwrks-twitter-importer-settings');
+define( 'DSTWEETS_ID', 'dsgnwrks-twitter-importer-settings');
 
 
 add_action('admin_init','dsgnwrks_twitter_init');
@@ -47,6 +47,7 @@ function dsgnwrks_twitter_users_validate( $opts ) {
 
 function dsgnwrks_twitter_settings_validate( $opts ) {
 
+	if ( empty( $opts ) ) return;
 	foreach ( $opts as $user => $useropts ) {
 		foreach ( $useropts as $key => $opt ) {
 
@@ -71,7 +72,7 @@ function dsgnwrks_twitter_settings_validate( $opts ) {
 add_action('admin_menu', 'dsgnwrks_twitter_settings');
 function dsgnwrks_twitter_settings() {
 
-	$plugin_page = add_submenu_page( 'tools.php', 'DsgnWrks Twitter Import Settings', 'Twitter Importer', 'manage_options', DSTWEET_ID, 'dsgnwrks_twitter_importer_settings' );
+	$plugin_page = add_submenu_page( 'tools.php', 'DsgnWrks Twitter Import Settings', 'Twitter Importer', 'manage_options', DSTWEETS_ID, 'dsgnwrks_twitter_importer_settings' );
 	add_action('admin_print_styles-' . $plugin_page, 'dsgnwrks_twitter_importer_styles');
 	add_action('admin_print_scripts-' . $plugin_page, 'dsgnwrks_twitter_importer_scripts');
 	add_action( 'admin_head-'. $plugin_page, 'dsgnwrks_twitter_fire_importer' );
@@ -101,35 +102,38 @@ function dsgnwrks_twitter_importer_scripts() {
 
 function dsgnwrks_twitter_fire_importer() {
 
-	if ( isset( $_GET['tweetimport'] ) ) {
-		add_action('all_admin_notices','dsgnwrks_twitter_import');
+	if ( isset( $_GET['tweetimport'] ) && isset( $_POST['username'] ) ) {
+		add_action( 'all_admin_notices', 'dsgnwrks_twitter_import' );
 	}
 }
 
 function dsgnwrks_twitter_import() {
 
-	$settings = get_option( 'dsgnwrks_tweet_options' );
-	$id = $_GET['tweetimport'];
+	$opts = get_option( 'dsgnwrks_tweet_options' );
+	$id = $_POST['username'];
+	if ( !isset( $_GET['tweetimport'] ) || empty( $id ) ) return;
 
 	$response = dsgnwrks_tweet_authenticate( $id );
 
 	if ( empty( $response['response'] ) ) {
 		echo '<div id="message" class="error"><p>Couldn\'t find a twitter feed. Please check the username.</p></div>';
-		$settings[$id]['noauth'] = true;
-		update_option( 'dsgnwrks_tweet_options', $settings );
+		$opts[$id]['noauth'] = true;
+		update_option( 'dsgnwrks_tweet_options', $opts );
 		return;
 	} else {
 
 		$body = apply_filters( 'dsgnwrks_twitter_api', $response['response'] );
 	}
 
-	if ( isset( $body->user->id ) && isset( $body->access_token ) ) {
+	wp_die( '<pre>'. htmlentities( print_r( $body, true ) ) .'</pre>' );
+
+	if ( isset( $body->channel->item ) ) {
 		echo '<div id="message" class="updated">';
 
-		$messages = dsgnwrks_tweet_messages( 'https://api.twitter.com/v1/users/'. $body->user->id .'/media/recent?access_token='. $body->access_token .'&count=80', $settings[$id] );
+		$messages = dsgnwrks_tweet_messages( 'https://api.twitter.com/v1/users/'. $body->user->id .'/media/recent?access_token='. $body->access_token .'&count=80', $opts[$id] );
 
 		while ( !empty( $messages['next_url'] ) ) {
-			$messages = dsgnwrks_tweet_messages( $messages['next_url'], $settings[$id], $messages['message'] );
+			$messages = dsgnwrks_tweet_messages( $messages['next_url'], $opts[$id], $messages['message'] );
 		}
 
 		foreach ( $messages['message'] as $key => $message ) {
@@ -141,7 +145,7 @@ function dsgnwrks_twitter_import() {
 
 }
 
-function dsgnwrks_tweet_messages( $api_url, $settings, $prevmessages = array() ) {
+function dsgnwrks_tweet_messages( $api_url, $opts, $prevmessages = array() ) {
 
 	$api = wp_remote_retrieve_body( wp_remote_get( $api_url ) );
 	$data = json_decode( $api );
@@ -150,7 +154,7 @@ function dsgnwrks_tweet_messages( $api_url, $settings, $prevmessages = array() )
 	require_once(ABSPATH . 'wp-admin/includes/media.php');
 	set_time_limit(300);
 
-	$messages = dsgnwrks_tweet_loop( $data, $settings );
+	$messages = dsgnwrks_tweet_loop( $data, $opts );
 
 	$next_url = ( !isset( $data->pagination->next_url ) || $messages['nexturl'] == 'halt' ) ? '' : $data->pagination->next_url;
 
@@ -168,21 +172,21 @@ function dsgnwrks_tweet_messages( $api_url, $settings, $prevmessages = array() )
 	}
 }
 
-function dsgnwrks_tweet_loop( $data = array(), $settings = array() ) {
+function dsgnwrks_tweet_loop( $data = array(), $opts = array() ) {
 
-	foreach ($data->data as $pics) {
+	foreach ($data->data as $tweets) {
 
-		if ( $settings['date-filter'] > $pics->created_time ) {
+		if ( $opts['date-filter'] > $tweets->created_time ) {
 			$messages['nexturl'] = 'halt';
 			break;
 		}
 
-		if ( !empty( $settings['tag-filter'] ) ) {
-			$tags = explode( ', ', $settings['tag-filter'] );
+		if ( !empty( $opts['tag-filter'] ) ) {
+			$tags = explode( ', ', $opts['tag-filter'] );
 			$in_title = false;
 			if ( $tags ) {
 			    foreach ($tags as $tag) {
-			        if ( strpos( $pics->caption->text, $tag ) ) $in_title = true;
+			        if ( strpos( $tweets->caption->text, $tag ) ) $in_title = true;
 			    }
 			}
 
@@ -192,11 +196,11 @@ function dsgnwrks_tweet_loop( $data = array(), $settings = array() ) {
 
 		$alreadyInSystem = new WP_Query(
 			array(
-				'post_type' => $settings['post-type'],
+				'post_type' => $opts['post-type'],
 				'meta_query' => array(
 					array(
 						'key' => 'twitter_created_time',
-						'value' => $pics->created_time
+						'value' => $tweets->created_time
 					)
 				)
 			)
@@ -205,29 +209,29 @@ function dsgnwrks_tweet_loop( $data = array(), $settings = array() ) {
 			continue;
 		}
 
-		$messages['messages'][] = jts_twitter_img( $pics, $settings );
+		$messages['messages'][] = jts_twitter_img( $tweets, $opts );
 	}
 	return $messages;
 }
 
-function jts_twitter_img( $pics, $settings = array(), $tags='' ) {
+function jts_twitter_img( $tweets, $opts = array(), $tags='' ) {
 
 	global $user_ID;
 
-	$settings = ( empty( $settings ) ) ? get_option( 'dsgnwrks_tweet_options' ) : $settings;
+	$opts = ( empty( $opts ) ) ? get_option( 'dsgnwrks_tweet_options' ) : $opts;
 
-	$loc = ( isset( $pics->location->name ) ) ? $pics->location->name : null;
+	$loc = ( isset( $tweets->location->name ) ) ? $tweets->location->name : null;
 
 	if ( $loc ) $loc = ' at '. $loc;
-	$title = wp_trim_words( $pics->caption->text, 12 );
+	$title = wp_trim_words( $tweets->caption->text, 12 );
 	if ( $tags ) {
 		$tags = '#'. $tags;
 		$title = str_replace( $tags, '', $title );
 	}
 	$title = ($title) ? $title : 'Untitled';
-	$imgurl = $pics->images->standard_resolution->url;
+	$imgurl = $tweets->images->standard_resolution->url;
 
-	$excerpt = $pics->caption->text;
+	$excerpt = $tweets->caption->text;
 	if ( $tags ) {
 		$tags = '#'. $tags;
 		$excerpt = str_replace( $tags, '', $excerpt );
@@ -235,90 +239,55 @@ function jts_twitter_img( $pics, $settings = array(), $tags='' ) {
 	$excerpt .= ' (Taken with Twitter'. $loc .')';
 
 	$content = '';
-	if ( $settings['image'] == 'content' || $settings['image'] == 'both' )
+	if ( $opts['image'] == 'content' || $opts['image'] == 'both' )
 		$content .= '<a href="'. $imgurl .'" ><img src="'. $imgurl .'"/></a>';
 	$content .= '<p>'. $excerpt .'</p>';
-	$content .= '<p>Twitter filter used: '. $pics->filter .'</p>';
-	$content .= '<p><a href="'. esc_url( $pics->link ) .'" target="_blank">View in Twitter &rArr;</a></p>';
+	$content .= '<p>Twitter filter used: '. $tweets->filter .'</p>';
+	$content .= '<p><a href="'. esc_url( $tweets->link ) .'" target="_blank">View in Twitter &rArr;</a></p>';
 
-	if ( !$settings['draft'] ) $settings['draft'] = 'draft';
-	if ( !$settings['author'] ) $settings['author'] = $user_ID;
+	if ( !$opts['draft'] ) $opts['draft'] = 'draft';
+	if ( !$opts['author'] ) $opts['author'] = $user_ID;
 
 	$post = array(
-	  'post_author' => $settings['author'],
+	  'post_author' => $opts['author'],
 	  'post_content' => $content,
-	  'post_date' => date( 'Y-m-d H:i:s', $pics->created_time ),
-	  'post_date_gmt' => date( 'Y-m-d H:i:s', $pics->created_time ),
+	  'post_date' => date( 'Y-m-d H:i:s', $tweets->created_time ),
+	  'post_date_gmt' => date( 'Y-m-d H:i:s', $tweets->created_time ),
 	  'post_excerpt' => $excerpt,
-	  'post_status' => $settings['draft'],
+	  'post_status' => $opts['draft'],
 	  'post_title' => $title,
-	  'post_type' => $settings['post-type'],
+	  'post_type' => $opts['post-type'],
 	);
 	$new_post_id = wp_insert_post( $post, true );
 
-	apply_filters( 'dsgnwrks_twitter_post_save', $new_post_id, $pics );
+	apply_filters( 'dsgnwrks_twitter_post_save', $new_post_id, $tweets );
 
 	$args = array(
 		'public' => true,
-		);
+	);
 	$taxs = get_taxonomies( $args, 'objects' );
 
 	foreach ( $taxs as $key => $tax ) {
 
 		if ( $tax->label == 'Format' && !current_theme_supports( 'post-formats' ) ) continue;
 
-		$settings[$tax->name] = !empty( $settings[$tax->name] ) ? esc_attr( $settings[$tax->name] ) : '';
+		$opts[$tax->name] = !empty( $opts[$tax->name] ) ? esc_attr( $opts[$tax->name] ) : '';
 
-		$taxonomies = explode( ', ', $settings[$tax->name] );
+		$taxonomies = explode( ', ', $opts[$tax->name] );
 
 		if ( !empty( $taxonomies ) )
 		wp_set_object_terms( $new_post_id, $taxonomies, $tax->name );
 
 	}
 
-	$tweet_data = array( 'count' => $pics->likes->count );
-	if ( !empty( $pics->likes->data ) ) {
-		foreach ( $pics->likes->data as $key => $user ) {
-			$tweet_data['data'][$key] = $user;
-		}
-	}
-
-	update_post_meta( $new_post_id, 'dsgnwrks_twitter_likes', $tweet_data );
-	update_post_meta( $new_post_id, 'twitter_created_time', $pics->created_time );
-	update_post_meta( $new_post_id, 'dsgnwrks_twitter_id', $pics->id );
-	update_post_meta( $new_post_id, 'twitter_filter_used', $pics->filter );
-	update_post_meta( $new_post_id, 'twitter_location', $pics->location );
-	update_post_meta( $new_post_id, 'twitter_link', esc_url( $pics->link ) );
-
-	return dsgnwrks_twitter_upload_img( $imgurl, $new_post_id, $title );
-}
-
-function dsgnwrks_twitter_upload_img( $imgurl='', $post_id='', $title='' ) {
-
-	if ( !empty( $imgurl ) ) {
-		$tmp = download_url( $imgurl );
-
-		preg_match('/[^\?]+\.(jpg|JPG|jpe|JPE|jpeg|JPEG|gif|GIF|png|PNG)/', $imgurl, $matches);
-		$file_array['name'] = basename($matches[0]);
-		$file_array['tmp_name'] = $tmp;
-
-		if ( is_wp_error( $tmp ) ) {
-			@unlink($file_array['tmp_name']);
-			$file_array['tmp_name'] = '';
-		}
-
-		$img_id = media_handle_sideload($file_array, $post_id, $title );
-
-		if ( is_wp_error($img_id) ) {
-			@unlink($file_array['tmp_name']);
-			return $img_id;
-		}
-
-		set_post_thumbnail( $post_id, $img_id );
-	}
+	update_post_meta( $new_post_id, 'twitter_created_time', $tweets->created_time );
+	update_post_meta( $new_post_id, 'dsgnwrks_twitter_id', $tweets->id );
+	update_post_meta( $new_post_id, 'twitter_location', $tweets->location );
+	update_post_meta( $new_post_id, 'twitter_link', esc_url( $tweets->link ) );
 
 	return '<p><strong><em>&ldquo;'. $title .'&rdquo; </em> imported and created successfully.</strong></p>';
 }
+
 
 add_action('current_screen','dw_tweet_redirect_on_deleteuser');
 function dw_tweet_redirect_on_deleteuser() {
@@ -369,21 +338,26 @@ function dw_tweet_filter( $opt = '', $filter = '', $else = '' ) {
 
 function dsgnwrks_tweet_authenticate( $user, $return = true ) {
 
-	$feed_url = 'http://twitter.com/statuses/user_timeline/'. $user. '.rss';
-	$response = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
-	$response = simplexml_load_string( $response, "SimpleXMLElement", LIBXML_NOCDATA );
-	if ( $response && empty( $response->error ) ) {
-		if ( $return == false ) $response = null;
+	$feed_url = 'http://twitter.com/statuses/user_timeline/'. $user .'.rss';
+	$feed_url = 'https://api.twitter.com/1/statuses/user_timeline.json?screen_name='. $user .'&count=200';
+	$response = wp_remote_get( $feed_url );
+	// wp_die( '<pre>'. htmlentities( print_r( $response, true ) ) .'</pre>' );
+	$body = wp_remote_retrieve_body( $response );
+	// $body = simplexml_load_string( $body, "SimpleXMLElement", LIBXML_NOCDATA );
+	$body = json_decode( $body );
+
+	if ( $body && !empty( $response['headers']['status'] ) && $response['headers']['status'] == '200 OK' ) {
+		if ( $return == false ) $body = null;
 		$noauth = '';
 		$badauth = 'good';
 	} else {
-		$response = null;
+		$body = null;
 		$badauth = 'error';
 		$noauth = true;
 	}
 
 	return array(
-		'response' => $response,
+		'response' => $body,
 		'badauth' => $badauth,
 		'noauth' => $noauth,
 	);

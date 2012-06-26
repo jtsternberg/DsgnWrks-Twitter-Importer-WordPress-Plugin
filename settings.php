@@ -9,6 +9,10 @@ $opts = get_option( 'dsgnwrks_tweet_options' );
 $reg = get_option( 'dsgnwrks_tweet_registration' );
 $users = get_option( 'dsgnwrks_tweet_users' );
 
+// echo '<pre>'. htmlentities( print_r( $opts, true ) ) .'</pre>';
+// echo '<pre>'. htmlentities( print_r( $reg, true ) ) .'</pre>';
+// echo '<pre>'. htmlentities( print_r( $users, true ) ) .'</pre>';
+
 $users = ( !empty( $users ) ) ? $users : array();
 
 if ( !empty( $reg ) && $reg['badauth'] == 'good' && !in_array( $reg['user'], $users ) ) {
@@ -135,8 +139,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								<tr valign="top" class="info">
 								<th colspan="2">
-									<p>Successfully connected to Twitter &mdash; <span><a id="delete-<?php echo $id; ?>" class="delete-twitter-user" href="<?php echo add_query_arg( 'deleteuser', $id ); ?>">Delete User?</a></span></p>
-									<p>Please select the import filter options below. If none of the options are selected, all photos for <strong><?php echo $id; ?></strong> will be imported. <em>(This could take a long time if you have a lot of tweets)</em></p>
+									<p>Ready to import from Twitter &mdash; <span><a id="delete-<?php echo $id; ?>" class="delete-twitter-user" href="<?php echo add_query_arg( 'deleteuser', $id ); ?>">Delete User?</a></span></p>
+									<p>Please select the import filter options below. If none of the options are selected, all tweets for <strong><?php echo $id; ?></strong> will be imported. <em>(This could take a long time if you have a lot of tweets)</em></p>
 								</th>
 								</tr>
 
@@ -153,7 +157,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								</tr>
 
 								<tr valign="top">
-								<th scope="row"><strong>Import from this date:</strong><br/>Select a date to begin importing your photos.</th>
+								<th scope="row"><strong>Import from this date:</strong><br/>Select a date to begin importing your tweets.</th>
 
 								<td class="curtime">
 
@@ -172,7 +176,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									}
 									else $date = 'No date selected';
 									$date = '<p style="padding-bottom: 2px; margin-bottom: 2px;" id="timestamp"> '. $date .'</p>';
-									$date .= '<input type="hidden" name="dsgnwrks_tweet_options['.$id.'][date-filter]" value="'. isset( $opts[$id]['date-filter'] ) ? $opts[$id]['date-filter'] : '' .'" />';
+									$date_filter = isset( $opts[$id]['date-filter'] ) ? $opts[$id]['date-filter'] : '';
+									$date .= '<input type="hidden" name="dsgnwrks_tweet_options['.$id.'][date-filter]" value="'. $date_filter .'" />';
 
 									$month = '<select id="twitter-mm" name="dsgnwrks_tweet_options['.$id.'][mm]">\n';
 									$month .= '<option value="">Month</option>';
@@ -340,6 +345,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								}
 
+								echo '<input type="hidden" name="username" value="replaceme" />';
+
 								$trans = get_transient( $id .'-tweetimportdone' );
 
 								if ( $trans ) { ?>
@@ -353,17 +360,19 @@ if ( !empty( $users ) && is_array( $users ) ) {
 							</table>
 
 							<p class="submit">
-								<input type="submit"  name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
 								<?php
 								$importlink = dsgnwrks_get_tweetimport_link( $id );
 								?>
-								<a href="<?php echo $importlink; ?>" class="button-secondary import-button" id="import-<?php echo $id; ?>">Import</a>
+								<input type="submit" name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
+								<input type="submit" id="import-<?php echo $id; ?>" name="<?php echo $importlink; ?>" class="button-secondary import-button" value="<?php _e( 'Import' ) ?>" />
+								<!-- <a href="<?php echo $importlink; ?>" class="button-secondary import-button" id="import-<?php echo $id; ?>">Import</a> -->
 							</p>
 						</div>
 						<?php
 					}
 					?>
 					</form>
+
 					<?php
 				} else {
 					$message = 'Welcome to Twitter Importer! Enter a Twitter username, and we\'ll get started.';
@@ -405,7 +414,7 @@ function ds_tweets_settings_user_form( $reg, $echo = true, $message = 'Enter ano
 			</tr>
 		</table>
 		<p class="submit">
-			<input type="submit" name="save" class="button-primary" value="<?php echo _e( 'Authenticate' ) ?>" />
+			<input type="submit" name="save" class="button-primary" value="<?php echo _e( 'Save' ) ?>" />
 		</p>
 	</form>
 
@@ -413,5 +422,6 @@ function ds_tweets_settings_user_form( $reg, $echo = true, $message = 'Enter ano
 }
 
 function dsgnwrks_get_tweetimport_link( $id ) {
-	return add_query_arg( 'tweetimport', $id, add_query_arg( 'page', DSTWEETS_ID, admin_url( $GLOBALS['pagenow'] ) ) );
+	// return add_query_arg( 'tweetimport', $id, add_query_arg( 'page', DSTWEETS_ID, admin_url( $GLOBALS['pagenow'] ) ) );
+	return add_query_arg( array( 'page' => DSTWEETS_ID, 'tweetimport' => 'true' ), admin_url( $GLOBALS['pagenow'] ) );
 }
