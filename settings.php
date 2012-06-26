@@ -361,7 +361,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 							<p class="submit">
 								<?php
-								$importlink = dsgnwrks_get_tweetimport_link( $id );
+								$importlink = dw_get_tweetimport_link( $id );
 								?>
 								<input type="submit" name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
 								<input type="submit" id="import-<?php echo $id; ?>" name="<?php echo $importlink; ?>" class="button-secondary import-button" value="<?php _e( 'Import' ) ?>" />
@@ -421,7 +421,7 @@ function ds_tweets_settings_user_form( $reg, $echo = true, $message = 'Enter ano
 	<?php
 }
 
-function dsgnwrks_get_tweetimport_link( $id ) {
+function dw_get_tweetimport_link( $id ) {
 	// return add_query_arg( 'tweetimport', $id, add_query_arg( 'page', DSTWEETS_ID, admin_url( $GLOBALS['pagenow'] ) ) );
 	return add_query_arg( array( 'page' => DSTWEETS_ID, 'tweetimport' => 'true' ), admin_url( $GLOBALS['pagenow'] ) );
 }
