@@ -9,10 +9,6 @@ $opts = get_option( 'dsgnwrks_tweet_options' );
 $reg = get_option( 'dsgnwrks_tweet_registration' );
 $users = get_option( 'dsgnwrks_tweet_users' );
 
-// echo '<pre>'. htmlentities( print_r( $opts, true ) ) .'</pre>';
-// echo '<pre>'. htmlentities( print_r( $reg, true ) ) .'</pre>';
-// echo '<pre>'. htmlentities( print_r( $users, true ) ) .'</pre>';
-
 $users = ( !empty( $users ) ) ? $users : array();
 
 if ( !empty( $reg ) && $reg['badauth'] == 'good' && !in_array( $reg['user'], $users ) ) {
@@ -39,6 +35,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 		if ( !empty( $opts[$user]['remove-tag-filter'] ) ) {
 			$opts[$user]['tag-filter'] = '';
 			$opts[$user]['remove-tag-filter'] = '';
+			update_option( 'dsgnwrks_tweet_options', $opts );
 		}
 
 		if ( !empty( $opts[$user]['tag-filter'] ) ) {
@@ -88,6 +85,9 @@ if ( !empty( $users ) && is_array( $users ) ) {
 							foreach ( $users as $key => $user ) {
 								$id = str_replace( ' ', '', strtolower( $user ) );
 								$class = ( !empty( $class ) || $nofeed == true ) ? '' : 'class="active"';
+								if ( isset( $opts['username'] ) ) {
+									$class = ( $opts['username'] == $id ) ? 'class="active"' : '';
+								}
 								?>
 								<li id="tab-twitter-user-<?php echo $id; ?>" <?php echo $class; ?>>
 									<a href="#twitter-user-<?php echo $id; ?>"><?php echo $user; ?></a>
@@ -123,6 +123,9 @@ if ( !empty( $users ) && is_array( $users ) ) {
 					foreach ( $users as $key => $user ) {
 						$id = str_replace( ' ', '', strtolower( $user ) );
 						$active = ( !empty( $active ) || $nofeed == true ) ? '' : ' active';
+						if ( isset( $opts['username'] ) ) {
+							$active = ( $opts['username'] == $id ) ? ' active' : '';
+						}
 						?>
 						<div id="twitter-user-<?php echo $id; ?>" class="help-tab-content<?php echo $active; ?>">
 
@@ -145,7 +148,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								</tr>
 
 								<tr valign="top">
-								<th scope="row"><strong>Filter import by hashtag:</strong><br/>Will only import tweets with these hashtags.<br/>Please separate tags with commas.</th>
+								<th scope="row"><strong>Filter import by hashtag:</strong><br/>Will only import tweets with these hashtags.<br/>Please separate tags (without the <b>#</b> symbol) with commas.</th>
 								<?php $tag_filter = isset( $opts[$id]['tag-filter'] ) ? $opts[$id]['tag-filter'] : ''; ?>
 								<td><input type="text" placeholder="e.g. keeper, fortheblog" name="dsgnwrks_tweet_options[<?php echo $id; ?>][tag-filter]" value="<?php echo $tag_filter; ?>" />
 								<?php
@@ -165,18 +168,18 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									<?php
 									global $wp_locale;
 
+									$date_filter = 0;
 									if ( !empty( $opts[$id]['mm'] ) || !empty( $opts[$id]['dd'] ) || !empty( $opts[$id]['yy'] ) ) {
 										if ( $complete[$id] ) {
 											$date = '<strong>'. $wp_locale->get_month( $opts[$id]['mm'] ) .' '. $opts[$id]['dd'] .', '. $opts[$id]['yy'] .'</strong>';
 												$opts[$id]['remove-date-filter'] = 'false';
-												$opts[$id]['date-filter'] = strtotime( $opts[$id]['mm'] .'/'. $opts[$id]['dd'] .'/'. $opts[$id]['yy'] );
+												$date_filter = strtotime( $opts[$id]['mm'] .'/'. $opts[$id]['dd'] .'/'. $opts[$id]['yy'] );
 										} else {
 											$date = '<span style="color: red;">Please select full date</span>';
 										}
 									}
-									else $date = 'No date selected';
+									else { $date = 'No date selected'; }
 									$date = '<p style="padding-bottom: 2px; margin-bottom: 2px;" id="timestamp"> '. $date .'</p>';
-									$date_filter = isset( $opts[$id]['date-filter'] ) ? $opts[$id]['date-filter'] : '';
 									$date .= '<input type="hidden" name="dsgnwrks_tweet_options['.$id.'][date-filter]" value="'. $date_filter .'" />';
 
 									$month = '<select id="twitter-mm" name="dsgnwrks_tweet_options['.$id.'][mm]">\n';
@@ -345,7 +348,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								}
 
-								echo '<input type="hidden" name="username" value="replaceme" />';
+								echo '<input type="hidden" name="dsgnwrks_tweet_options[username]" value="replaceme" />';
+								// echo '<input id="replaceme" type="hidden" name="dsgnwrks_tweet_options[saved]" value="'. $id .'" />';
 
 								$trans = get_transient( $id .'-tweetimportdone' );
 
@@ -363,8 +367,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<?php
 								$importlink = dw_get_tweetimport_link( $id );
 								?>
-								<input type="submit" name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
-								<input type="submit" id="import-<?php echo $id; ?>" name="<?php echo $importlink; ?>" class="button-secondary import-button" value="<?php _e( 'Import' ) ?>" />
+								<input type="submit" id="save-<?php echo sanitize_title( $id ); ?>" name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
+								<input type="submit" id="import-<?php echo sanitize_title( $id ); ?>" name="<?php echo $importlink; ?>" class="button-secondary import-button" value="<?php _e( 'Import' ) ?>" />
 								<!-- <a href="<?php echo $importlink; ?>" class="button-secondary import-button" id="import-<?php echo $id; ?>">Import</a> -->
 							</p>
 						</div>

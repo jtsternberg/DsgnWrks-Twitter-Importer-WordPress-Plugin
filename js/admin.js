@@ -36,11 +36,20 @@ jQuery(document).ready(function($) {
 		}
 	});
 
+	var width = $('.help-tab-content').width();
+	$('.dw-pw-form').width(width-85);
+
+	$('.button-primary').click(function(event) {
+		var id = $(this).attr('id').replace('save-','');
+		$('input[name="dsgnwrks_tweet_options[username]"]').val(id);
+		// event.preventDefault();
+	});
+
 	$('.import-button').click(function(event) {
 		var newaction = $(this).attr('name'),
 		id = $(this).attr('id').replace('import-','');
 		$('.twitter-importer').attr('action', newaction);
-		$('input[name="username"]').val(id);
+		$('input[name="dsgnwrks_tweet_options[username]"]').val(id);
 		// event.preventDefault();
 	});
 

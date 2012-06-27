@@ -49,16 +49,27 @@ function dw_twitter_settings_validate( $opts ) {
 
 	if ( empty( $opts ) ) return;
 	foreach ( $opts as $user => $useropts ) {
+		if ( $user == 'username' ) continue;
 		foreach ( $useropts as $key => $opt ) {
 
 			if ( $key === 'date-filter' ) {
-				$opts[$user][$key] = dw_tweet_filter( $opt, '', '0' );
+				if ( empty( $opts[$user]['mm'] ) && empty( $opts[$user]['dd'] ) && empty( $opts[$user]['yy'] ) || !empty( $opts[$user]['remove-date-filter'] ) ) {
+					$opts[$user][$key] = 0;
+				}
+				else {
+					$opts[$user][$key] = strtotime( $opts[$user]['mm'] .'/'. $opts[$user]['dd'] .'/'. $opts[$user]['yy'] );
+				}
 			} elseif ( $key === 'post-type' ) {
 				$opts[$user][$key] = dw_tweet_filter( $opt, '', 'post' );
 			} elseif ( $key === 'draft' ) {
 				$opts[$user][$key] = dw_tweet_filter( $opt, '', 'draft' );
 			} elseif ( $key === 'yy' || $key === 'mm' || $key === 'dd' ) {
-				$opts[$user][$key] = dw_tweet_filter( $opt, 'absint', '' );
+				if ( empty( $opts[$user]['mm'] ) && empty( $opts[$user]['dd'] ) && empty( $opts[$user]['yy'] ) || !empty( $opts[$user]['remove-date-filter'] ) ) {
+					$opts[$user][$key] = '';
+				}
+				else {
+					$opts[$user][$key] = dsgnwrks_filter( $opt, 'absint', '' );
+				}
 			} else {
 				$opts[$user][$key] = dw_tweet_filter( $opt );
 			}
@@ -85,7 +96,7 @@ function dw_twitter_importer_styles() {
 }
 
 function dw_twitter_importer_scripts() {
-	wp_enqueue_script( 'dw-twitter-admin', plugins_url( 'js/admin.js', __FILE__ ), array( 'jquery' ) );
+	wp_enqueue_script( 'dw-twitter-admin', plugins_url( 'js/admin.js', __FILE__ ), array( 'jquery' ), '1.1' );
 
 	$args = array(
 	  'public'   => true,
@@ -102,7 +113,7 @@ function dw_twitter_importer_scripts() {
 
 function dw_twitter_fire_importer() {
 
-	if ( isset( $_GET['tweetimport'] ) && isset( $_POST['username'] ) ) {
+	if ( isset( $_GET['tweetimport'] ) && isset( $_POST['dsgnwrks_tweet_options']['username'] ) ) {
 		add_action( 'all_admin_notices', 'dw_twitter_import' );
 	}
 }
@@ -110,7 +121,7 @@ function dw_twitter_fire_importer() {
 function dw_twitter_import() {
 
 	$opts = get_option( 'dsgnwrks_tweet_options' );
-	$id = $_POST['username'];
+	$id = $_POST['dsgnwrks_tweet_options']['username'];
 	if ( !isset( $_GET['tweetimport'] ) || empty( $id ) ) return;
 
 	$response = dw_tweet_authenticate( $id );
@@ -122,46 +133,32 @@ function dw_twitter_import() {
 		return;
 	} else {
 
-		$body = apply_filters( 'dw_twitter_api', $response['response'] );
+		$tweets = apply_filters( 'dw_twitter_api', $response['response'] );
 	}
 
-	wp_die( '<pre>'. htmlentities( print_r( $body, true ) ) .'</pre>' );
+	echo '<div id="message" class="updated">';
+	$messages = dw_tweet_messages( $tweets, $opts[$id] );
 
-	if ( isset( $body->channel->item ) ) {
-		echo '<div id="message" class="updated">';
-
-		$messages = dw_tweet_messages( 'https://api.twitter.com/v1/users/'. $body->user->id .'/media/recent?access_token='. $body->access_token .'&count=80', $opts[$id] );
-
-		while ( !empty( $messages['next_url'] ) ) {
-			$messages = dw_tweet_messages( $messages['next_url'], $opts[$id], $messages['message'] );
-		}
-
-		foreach ( $messages['message'] as $key => $message ) {
-			echo $message;
-		}
-		echo '</div>';
-
+	while ( !empty( $messages['next_url'] ) ) {
+		$messages = dw_tweet_messages( $messages['next_url'], $opts[$id], $messages['message'] );
 	}
 
+	foreach ( $messages['message'] as $key => $message ) {
+		echo $message;
+	}
+	echo '</div>';
 }
 
-function dw_tweet_messages( $api_url, $opts, $prevmessages = array() ) {
+function dw_tweet_messages( $tweets, $opts, $prevmessages = array() ) {
 
-	$api = wp_remote_retrieve_body( wp_remote_get( $api_url ) );
-	$data = json_decode( $api );
+	$messages = dw_tweet_loop( $tweets, $opts );
 
-	require_once(ABSPATH . 'wp-admin/includes/file.php');
-	require_once(ABSPATH . 'wp-admin/includes/media.php');
-	set_time_limit(300);
-
-	$messages = dw_tweet_loop( $data, $opts );
-
-	$next_url = ( !isset( $data->pagination->next_url ) || $messages['nexturl'] == 'halt' ) ? '' : $data->pagination->next_url;
+	$next_url = ( !isset( $tweets->pagination->next_url ) || $messages['nexturl'] == 'halt' ) ? '' : $tweets->pagination->next_url;
 
 	$messages = ( isset( $messages['messages'] ) ) ? array_merge( $prevmessages, $messages['messages'] ) : $prevmessages;
 	if ( empty( $messages ) && empty( $prevmessages ) ) {
 		return array(
-			'message' => array( '<p>No new Twitter shots to import</p>' ),
+			'message' => array( '<p>No new tweets to import</p>' ),
 			'next_url' => $next_url,
 		);
 	} else {
@@ -172,11 +169,11 @@ function dw_tweet_messages( $api_url, $opts, $prevmessages = array() ) {
 	}
 }
 
-function dw_tweet_loop( $data = array(), $opts = array() ) {
+function dw_tweet_loop( $tweets = array(), $opts = array() ) {
 
-	foreach ($data->data as $tweets) {
+	foreach ( $tweets as $tweet ) {
 
-		if ( $opts['date-filter'] > $tweets->created_time ) {
+		if ( $opts['date-filter'] > strtotime( $tweet->created_at ) ) {
 			$messages['nexturl'] = 'halt';
 			break;
 		}
@@ -186,21 +183,20 @@ function dw_tweet_loop( $data = array(), $opts = array() ) {
 			$in_title = false;
 			if ( $tags ) {
 			    foreach ($tags as $tag) {
-			        if ( strpos( $tweets->caption->text, $tag ) ) $in_title = true;
+			        if ( strpos( $tweet->text, '#'.$tag ) ) $in_title = true;
 			    }
 			}
 
 			if ( !$in_title ) continue;
 		}
 
-
 		$alreadyInSystem = new WP_Query(
 			array(
 				'post_type' => $opts['post-type'],
 				'meta_query' => array(
 					array(
-						'key' => 'twitter_created_time',
-						'value' => $tweets->created_time
+						'key' => 'twitter_created_at',
+						'value' => $tweet->created_at
 					)
 				)
 			)
@@ -209,64 +205,34 @@ function dw_tweet_loop( $data = array(), $opts = array() ) {
 			continue;
 		}
 
-		$messages['messages'][] = jts_twitter_img( $tweets, $opts );
+		$messages['messages'][] = dw_tweet_save( $tweet, $opts );
 	}
-	return $messages;
+	return !empty( $messages ) ? $messages : array();
 }
 
-function jts_twitter_img( $tweets, $opts = array(), $tags='' ) {
+function dw_tweet_save( $tweet, $opts = array() ) {
 
 	global $user_ID;
 
 	$opts = ( empty( $opts ) ) ? get_option( 'dsgnwrks_tweet_options' ) : $opts;
 
-	$loc = ( isset( $tweets->location->name ) ) ? $tweets->location->name : null;
-
-	if ( $loc ) $loc = ' at '. $loc;
-	$title = wp_trim_words( $tweets->caption->text, 12 );
-	if ( $tags ) {
-		$tags = '#'. $tags;
-		$title = str_replace( $tags, '', $title );
-	}
-	$title = ($title) ? $title : 'Untitled';
-	$imgurl = $tweets->images->standard_resolution->url;
-
-	$excerpt = $tweets->caption->text;
-	if ( $tags ) {
-		$tags = '#'. $tags;
-		$excerpt = str_replace( $tags, '', $excerpt );
-	}
-	$excerpt .= ' (Taken with Twitter'. $loc .')';
-
-	$content = '';
-	if ( $opts['image'] == 'content' || $opts['image'] == 'both' )
-		$content .= '<a href="'. $imgurl .'" ><img src="'. $imgurl .'"/></a>';
-	$content .= '<p>'. $excerpt .'</p>';
-	$content .= '<p>Twitter filter used: '. $tweets->filter .'</p>';
-	$content .= '<p><a href="'. esc_url( $tweets->link ) .'" target="_blank">View in Twitter &rArr;</a></p>';
-
-	if ( !$opts['draft'] ) $opts['draft'] = 'draft';
-	if ( !$opts['author'] ) $opts['author'] = $user_ID;
+	if ( !isset( $opts['draft'] ) ) $opts['draft'] = 'draft';
+	if ( !isset( $opts['author'] ) ) $opts['author'] = $user_ID;
 
 	$post = array(
 	  'post_author' => $opts['author'],
-	  'post_content' => $content,
-	  'post_date' => date( 'Y-m-d H:i:s', $tweets->created_time ),
-	  'post_date_gmt' => date( 'Y-m-d H:i:s', $tweets->created_time ),
-	  'post_excerpt' => $excerpt,
+	  'post_content' => $tweet->text,
+	  'post_date' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
+	  'post_date_gmt' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_status' => $opts['draft'],
-	  'post_title' => $title,
+	  'post_title' => $tweet->id_str,
 	  'post_type' => $opts['post-type'],
 	);
 	$new_post_id = wp_insert_post( $post, true );
 
-	apply_filters( 'dw_twitter_post_save', $new_post_id, $tweets );
+	apply_filters( 'dw_twitter_post_save', $new_post_id, $tweet );
 
-	$args = array(
-		'public' => true,
-	);
-	$taxs = get_taxonomies( $args, 'objects' );
-
+	$taxs = get_taxonomies( array( 'public' => true ), 'objects' );
 	foreach ( $taxs as $key => $tax ) {
 
 		if ( $tax->label == 'Format' && !current_theme_supports( 'post-formats' ) ) continue;
@@ -277,19 +243,23 @@ function jts_twitter_img( $tweets, $opts = array(), $tags='' ) {
 
 		if ( !empty( $taxonomies ) )
 		wp_set_object_terms( $new_post_id, $taxonomies, $tax->name );
-
 	}
 
-	update_post_meta( $new_post_id, 'twitter_created_time', $tweets->created_time );
-	update_post_meta( $new_post_id, 'twitter_id', $tweets->id );
-	update_post_meta( $new_post_id, 'twitter_location', $tweets->location );
-	update_post_meta( $new_post_id, 'twitter_link', esc_url( $tweets->link ) );
+	update_post_meta( $new_post_id, 'tweet_source', $tweet->source );
+	if ( !empty( $tweet->in_reply_to_status_id_str ) )
+	update_post_meta( $new_post_id, 'in_reply_to_status_id_str', $tweet->in_reply_to_status_id_str );
+	if ( !empty( $tweet->in_reply_to_user_id ) )
+	update_post_meta( $new_post_id, 'in_reply_to_user_id', $tweet->in_reply_to_user_id );
+	if ( !empty( $tweet->in_reply_to_screen_name ) )
+	update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
+	if ( !empty( $tweet->in_reply_to_screen_name ) )
+	update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 
-	return '<p><strong><em>&ldquo;'. $title .'&rdquo; </em> imported and created successfully.</strong></p>';
+	return '<p><strong><em>&ldquo;'. wp_trim_words( strip_tags( $tweet->text ), 10 ) .'&rdquo; </em> imported and created successfully.</strong></p>';
 }
 
 
-add_action('current_screen','dw_tweet_redirect_on_deleteuser');
+add_action( 'current_screen', 'dw_tweet_redirect_on_deleteuser' );
 function dw_tweet_redirect_on_deleteuser() {
 
 	if ( isset( $_GET['deleteuser'] ) ) {
