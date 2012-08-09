@@ -36,13 +36,29 @@ function dw_twitter_init() {
 function dw_twitter_users_validate( $opts ) {
 
 	if ( !empty( $opts['user'] ) ) {
+		$validated = dw_twitter_user_validate( $opts['user'] );
 
-		$response = dw_tweet_authenticate( $opts['user'], false );
+		if ( $validated ) {
+			$response = dw_tweet_authenticate( $opts['user'], false );
 
-		$opts['badauth'] = $response['badauth'];
-		$opts['noauth'] = $response['noauth'];
+			$opts['badauth'] = $response['badauth'];
+			$opts['noauth'] = $response['noauth'];
+
+			$settings = get_option( 'dsgnwrks_tweet_options' );
+			$settings['username'] = $opts['user'];
+			update_option( 'dsgnwrks_tweet_options', $settings );
+
+		} else {
+			// unset( $opts['user'] );
+			$opts['badauth'] = 'error';
+			$opts['noauth'] = true;
+		}
 	}
 	return $opts;
+}
+
+function dw_twitter_user_validate( $username ) {
+    return preg_match( '/^[A-Za-z0-9_]+$/', $username );
 }
 
 function dw_twitter_settings_validate( $opts ) {
@@ -225,7 +241,7 @@ function dw_tweet_save( $tweet, $opts = array() ) {
 	  'post_date' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_date_gmt' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_status' => $opts['draft'],
-	  'post_title' => $tweet->id_str,
+	  'post_title' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_type' => $opts['post-type'],
 	);
 	$new_post_id = wp_insert_post( $post, true );
@@ -262,19 +278,21 @@ function dw_tweet_save( $tweet, $opts = array() ) {
 add_action( 'current_screen', 'dw_tweet_redirect_on_deleteuser' );
 function dw_tweet_redirect_on_deleteuser() {
 
-	if ( isset( $_GET['deleteuser'] ) ) {
+	if ( isset( $_GET['delete-twitter-user'] ) ) {
 		$users = get_option( 'dsgnwrks_tweet_users' );
 		foreach ( $users as $key => $user ) {
-			if ( $user == $_GET['deleteuser'] ) $delete = $key;
+			if ( $user == $_GET['delete-twitter-user'] ) $delete = $key;
 		}
 		unset( $users[$delete] );
 		update_option( 'dsgnwrks_tweet_users', $users );
 
 		$opts = get_option( 'dsgnwrks_tweet_options' );
-		unset( $opts[$_GET['deleteuser']] );
+		unset( $opts[$_GET['delete-twitter-user']] );
+		if ( isset( $opts['username'] ) && $opts['username'] == $_GET['delete-twitter-user'] )
+		unset( $opts['username'] );
 		update_option( 'dsgnwrks_tweet_options', $opts );
 
-		wp_redirect( remove_query_arg( 'deleteuser' ), 307 );
+		wp_redirect( remove_query_arg( 'delete-twitter-user' ), 307 );
 		exit;
 	}
 }

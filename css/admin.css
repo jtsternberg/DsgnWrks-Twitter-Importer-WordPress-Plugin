@@ -85,3 +85,9 @@
 	bottom: 28px;
 	left: 85px;
 }
+
+.atsymbol {
+	font-size: 15px;
+	vertical-align: middle;
+	color: #E0522E;
+}

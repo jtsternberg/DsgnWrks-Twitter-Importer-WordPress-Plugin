@@ -8,7 +8,7 @@ if ( !current_user_can( 'manage_options' ) )  {
 $opts = get_option( 'dsgnwrks_tweet_options' );
 $reg = get_option( 'dsgnwrks_tweet_registration' );
 $users = get_option( 'dsgnwrks_tweet_users' );
-
+// echo '<pre>'. htmlentities( print_r( $opts, true ) ) .'</pre>';
 $users = ( !empty( $users ) ) ? $users : array();
 
 if ( !empty( $reg ) && $reg['badauth'] == 'good' && !in_array( $reg['user'], $users ) ) {
@@ -57,7 +57,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 	$nogo = $nofeed = false;
 	// Setup our notifications
-	if ( !empty( $reg['user'] ) && !empty( $reg['badauth'] ) && $reg['badauth'] == 'error' ) {
+	if ( !empty( $reg['badauth'] ) && $reg['badauth'] == 'error' ) {
 		echo '<div id="message" class="error"><p>Couldn\'t find a twitter feed. Please check the username.</p></div>';
 		$nofeed = true;
 	} elseif ( empty( $reg['user'] ) && empty( $users ) ) {
@@ -84,12 +84,12 @@ if ( !empty( $users ) && is_array( $users ) ) {
 						if ( !empty( $users ) && is_array( $users ) ) {
 							foreach ( $users as $key => $user ) {
 								$id = str_replace( ' ', '', strtolower( $user ) );
-								$class = ( !empty( $class ) || $nofeed == true ) ? '' : 'class="active"';
+								$class = ( !empty( $class ) || $nofeed == true ) ? '' : ' active';
 								if ( isset( $opts['username'] ) ) {
-									$class = ( $opts['username'] == $id ) ? 'class="active"' : '';
+									$class = ( $opts['username'] == $id ) ? ' active' : '';
 								}
 								?>
-								<li id="tab-twitter-user-<?php echo $id; ?>" <?php echo $class; ?>>
+								<li class="tab-twitter-user<?php echo $class; ?>" id="tab-twitter-user-<?php echo $id; ?>">
 									<a href="#twitter-user-<?php echo $id; ?>"><?php echo $user; ?></a>
 								</li>
 								<?php
@@ -98,7 +98,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 							$user = 'Create User';
 							$class = str_replace( ' ', '', strtolower( $user ) );
 							?>
-							<li id="tab-twitter-user-<?php echo $class; ?>" class="active">
+							<li class="tab-twitter-user" id="tab-twitter-user-<?php echo $class; ?>" class="active">
 								<a href="#twitter-user-<?php echo $class; ?>"><?php echo $user; ?></a>
 							</li>
 							<?php
@@ -142,7 +142,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								<tr valign="top" class="info">
 								<th colspan="2">
-									<p>Ready to import from Twitter &mdash; <span><a id="delete-<?php echo $id; ?>" class="delete-twitter-user" href="<?php echo add_query_arg( 'deleteuser', $id ); ?>">Delete User?</a></span></p>
+									<p>Ready to import from Twitter &mdash; <span><a id="delete-<?php echo $id; ?>" class="delete-twitter-user" href="<?php echo add_query_arg( 'delete-twitter-user', $id ); ?>">Delete User?</a></span></p>
 									<p>Please select the import filter options below. If none of the options are selected, all tweets for <strong><?php echo $id; ?></strong> will be imported. <em>(This could take a long time if you have a lot of tweets)</em></p>
 								</th>
 								</tr>
@@ -175,7 +175,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 												$opts[$id]['remove-date-filter'] = 'false';
 												$date_filter = strtotime( $opts[$id]['mm'] .'/'. $opts[$id]['dd'] .'/'. $opts[$id]['yy'] );
 										} else {
-											$date = '<span style="color: red;">Please select full date</span>';
+											$date = '<span style="color: #E0522E;">Please select full date</span>';
 										}
 									}
 									else { $date = 'No date selected'; }
@@ -253,15 +253,16 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<tr valign="top">
 								<th scope="row"><strong>Import to Post-Type:</strong></th>
 								<td>
-									<select id="twitter-post-type" name="dsgnwrks_tweet_options[<?php echo $id; ?>][post-type]">
+									<select class="twitter-post-type" id="twitter-post-type-<?php echo $id; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][post-type]">
 										<?php
-										$args=array(
-										  'public'   => true,
+										$args = array(
+										  'public' => true,
 										);
-										$post_types=get_post_types( $args );
+										$post_types = get_post_types( $args );
+										$cur_post_type = isset( $opts[$id]['post-type'] ) ? $opts[$id]['post-type'] : '';
 										foreach ($post_types  as $post_type ) {
 											?>
-											<option value="<?php echo $post_type; ?>" <?php selected( $opts[$id]['post-type'], $post_type ); ?>><?php echo $post_type; ?></option>
+											<option value="<?php echo $post_type; ?>" <?php selected( $cur_post_type, $post_type ); ?>><?php echo $post_type; ?></option>
 											<?php
 										}
 										?>
@@ -338,10 +339,17 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									$placeholder = 'e.g. Twitter, Life, dog, etc';
 
 									if ( $tax->name == 'post_tag' )  $placeholder = 'e.g. beach, sunrise';
+
+									$tax_section_label = '<strong>'.$tax->label.' to apply to imported posts.</strong><br/>Please separate '.strtolower( $tax->label ).' with commas'."\n";
+									$tax_section_input = '<input type="text" placeholder="'.$placeholder.'" name="dsgnwrks_tweet_options['.$id.']['.$tax->name.']" value="'.$opts[$id][$tax->name].'" />'."\n";
+
 									?>
 									<tr valign="top" class="taxonomies-add taxonomy-<?php echo $tax->name; ?>">
-									<th scope="row"><strong><?php echo $tax->label; ?> to apply to imported posts.</strong><br/>Please separate <?php echo strtolower( $tax->label ); ?> with commas.</th>
-									<td><input type="text" placeholder="<?php echo $placeholder; ?>" name="dsgnwrks_tweet_options[<?php echo $id; ?>][<?php echo $tax->name; ?>]" value="<?php echo $opts[$id][''. $tax->name]; ?>" />
+									<th scope="row">
+										<?php echo apply_filters( 'dw_twitter_tax_section_label', $tax_section_label, $tax ); ?>
+									</th>
+									<td>
+										<?php echo apply_filters( 'dw_twitter_tax_section_input', $tax_section_input, $tax, $id, $opts ); ?>
 									</td>
 									</tr>
 									<?php
@@ -380,12 +388,12 @@ if ( !empty( $users ) && is_array( $users ) ) {
 					<?php
 				} else {
 					$message = 'Welcome to Twitter Importer! Enter a Twitter username, and we\'ll get started.';
-					ds_tweets_settings_user_form( $reg, true, $message );
+					dw_twitter_settings_user_form( $reg, true, $message );
 				}
 
 				if ( !$nogo ) { ?>
 					<div id="add-another-user" class="help-tab-content <?php echo ( $nofeed == true ) ? ' active' : ''; ?>">
-						<?php ds_tweets_settings_user_form( $reg ); ?>
+						<?php dw_twitter_settings_user_form( $reg ); ?>
 					</div>
 				<?php } ?>
 				</div>
@@ -403,7 +411,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 </div>
 
 <?php
-function ds_tweets_settings_user_form( $reg, $echo = true, $message = 'Enter another Twitter username to import their tweets.' ) {
+function dw_twitter_settings_user_form( $reg, $echo = true, $message = 'Enter another Twitter username to import their tweets.' ) {
 
 	$id = 'dsgnwrks_tweet_registration[user]';
 
@@ -414,7 +422,7 @@ function ds_tweets_settings_user_form( $reg, $echo = true, $message = 'Enter ano
 			<p><?php echo $message; ?></p>
 			<tr valign="top">
 			<th scope="row"><label for="<?php echo $id; ?>"><strong>Twitter Username:</strong></label></th>
-			<td><input type="text" id="<?php echo $id; ?>" name="<?php echo $id; ?>" value="<?php if ( $echo == true ) echo esc_attr( $reg['user'] ); ?>" /></td>
+			<td><strong class="atsymbol">@</strong><input type="text" id="<?php echo $id; ?>" name="<?php echo $id; ?>" value="<?php if ( $echo == true ) echo esc_attr( $reg['user'] ); ?>" /></td>
 			</tr>
 		</table>
 		<p class="submit">

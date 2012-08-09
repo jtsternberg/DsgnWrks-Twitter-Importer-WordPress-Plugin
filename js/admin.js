@@ -2,11 +2,25 @@ jQuery(document).ready(function($) {
 
 	if (window.dwtwitter.cpts !== undefined) {
 
+		show_tax_blocks_init();
+
+		$('.tab-twitter-user a').click(function() {
+			show_tax_blocks_init($(this).text());
+		});
+
+	}
+	function show_tax_blocks_init(user) {
+
 		$('.taxonomies-add').hide();
 
-		var select = $('#twitter-post-type'),
-		curr_cpt = $('#twitter-post-type').val(),
+		var select = $('.help-tab-content.active .twitter-post-type'),
+		curr_cpt = $('.help-tab-content.active .twitter-post-type').val(),
 		cpts = dwtwitter.cpts;
+
+		if (user !== undefined) {
+			select = $('#twitter-post-type-'+user),
+			curr_cpt = $('#twitter-post-type-'+user).val();
+		}
 
 		show_tax_blocks(curr_cpt,cpts);
 
@@ -14,8 +28,8 @@ jQuery(document).ready(function($) {
 			$('.taxonomies-add').hide();
 			show_tax_blocks($(select).val(),cpts);
 		});
-
 	}
+
 
 	function show_tax_blocks(curr_cpt,cpts) {
 
