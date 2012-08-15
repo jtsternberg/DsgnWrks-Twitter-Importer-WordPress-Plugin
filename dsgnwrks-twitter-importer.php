@@ -262,12 +262,11 @@ function dw_tweet_save( $tweet, $opts = array() ) {
 	}
 
 	update_post_meta( $new_post_id, 'tweet_source', $tweet->source );
+	update_post_meta( $new_post_id, 'tweet_id', $tweet->id_str );
 	if ( !empty( $tweet->in_reply_to_status_id_str ) )
 	update_post_meta( $new_post_id, 'in_reply_to_status_id_str', $tweet->in_reply_to_status_id_str );
 	if ( !empty( $tweet->in_reply_to_user_id ) )
 	update_post_meta( $new_post_id, 'in_reply_to_user_id', $tweet->in_reply_to_user_id );
-	if ( !empty( $tweet->in_reply_to_screen_name ) )
-	update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 	if ( !empty( $tweet->in_reply_to_screen_name ) )
 	update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 

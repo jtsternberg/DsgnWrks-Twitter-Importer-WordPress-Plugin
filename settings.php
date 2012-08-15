@@ -198,7 +198,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									for ( $i = 1; $i < 32; $i = $i +1 ) {
 										$daynum = zeroise($i, 2);
 										$day .= "\t\t\t" . '<option value="' . $daynum . '"';
-										if ( $i == $opts[$id]['dd'] )
+										if ( isset( $opts[$id]['dd'] ) && $i == $opts[$id]['dd'] )
 											$day .= ' selected="selected"';
 										$day .= '>' . $daynum;
 									}
@@ -209,7 +209,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									for ( $i = date( 'Y' ); $i >= 2010; $i = $i -1 ) {
 										$yearnum = zeroise($i, 4);
 										$year .= "\t\t\t" . '<option value="' . $yearnum . '"';
-										if ( $i == $opts[$id]['yy'] )
+										if ( isset( $opts[$id]['yy'] ) && $i == $opts[$id]['yy'] )
 											$year .= ' selected="selected"';
 										$year .= '>' . $yearnum;
 									}
@@ -275,10 +275,11 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<th scope="row"><strong>Imported posts status:</strong></th>
 								<td>
 									<select id="twitter-draft" name="dsgnwrks_tweet_options[<?php echo $id; ?>][draft]">
-										<option value="draft" <?php selected( $opts[$id]['draft'], 'draft' ); ?>>Draft</option>
-										<option value="publish" <?php selected( $opts[$id]['draft'], 'publish' ); ?>>Published</option>
-										<option value="pending" <?php selected( $opts[$id]['draft'], 'pending' ); ?>>Pending</option>
-										<option value="private" <?php selected( $opts[$id]['draft'], 'private' ); ?>>Private</option>
+										<?php $draft_status = isset( $opts[$id]['draft'] ) ? $opts[$id]['draft'] : ''; ?>
+										<option value="draft" <?php selected( $draft_status, 'draft' ); ?>>Draft</option>
+										<option value="publish" <?php selected( $draft_status, 'publish' ); ?>>Published</option>
+										<option value="pending" <?php selected( $draft_status, 'pending' ); ?>>Pending</option>
+										<option value="private" <?php selected( $draft_status, 'private' ); ?>>Private</option>
 									</select>
 
 								</td>
@@ -288,7 +289,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<th scope="row"><strong>Assign posts to an existing user:</strong></th>
 								<td>
 									<?php
-									wp_dropdown_users( array( 'name' => 'dsgnwrks_tweet_options['.$id.'][author]', 'selected' => $opts[$id]['author'] ) );
+									$selected_user = isset( $opts[$id]['author'] ) ? $opts[$id]['author'] : '';
+									wp_dropdown_users( array( 'name' => 'dsgnwrks_tweet_options['.$id.'][author]', 'selected' => $selected_user ) );
 									?>
 
 								</td>
