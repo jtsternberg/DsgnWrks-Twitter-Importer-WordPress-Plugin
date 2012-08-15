@@ -211,8 +211,8 @@ function dw_tweet_loop( $tweets = array(), $opts = array() ) {
 				'post_type' => $opts['post-type'],
 				'meta_query' => array(
 					array(
-						'key' => 'twitter_created_at',
-						'value' => $tweet->created_at
+						'key' => 'tweet_id',
+						'value' => $tweet->id_str
 					)
 				)
 			)
