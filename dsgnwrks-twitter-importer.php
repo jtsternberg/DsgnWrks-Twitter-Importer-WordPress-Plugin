@@ -2,7 +2,7 @@
 /*
 Plugin Name: DsgnWrks Twitter Importer
 Plugin URI: http://dsgnwrks.pro/twitter-importer/
-Description: Allows you to backup your twitter photos while allowing you to have a site to display your twitter archive.
+Description: Helps you to backup your tweets while allowing you to have a site to display your twitter archive. Built-in support for importing to custom post types and attaching custom taxonomies.
 Author URI: http://dsgnwrks.pro
 Author: DsgnWrks
 Donate link: http://dsgnwrks.pro/give/
