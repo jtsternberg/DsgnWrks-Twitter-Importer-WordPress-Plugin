@@ -237,7 +237,7 @@ function dw_tweet_save( $tweet, $opts = array() ) {
 
 	$post = array(
 	  'post_author' => $opts['author'],
-	  'post_content' => $tweet->text,
+	  'post_content' => iconv( "UTF-8", "ISO-8859-1//IGNORE", $tweet->text ),
 	  'post_date' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_date_gmt' => date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) ),
 	  'post_status' => $opts['draft'],
