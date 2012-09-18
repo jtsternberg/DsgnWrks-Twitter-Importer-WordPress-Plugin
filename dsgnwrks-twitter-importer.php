@@ -153,6 +153,10 @@ function dw_twitter_import() {
 	}
 
 	echo '<div id="message" class="updated">';
+
+	$pre = date('e');
+	date_default_timezone_set( get_option('timezone_string') );
+
 	$messages = dw_tweet_messages( $tweets, $opts[$id] );
 
 	while ( !empty( $messages['next_url'] ) ) {
@@ -162,6 +166,9 @@ function dw_twitter_import() {
 	foreach ( $messages['message'] as $key => $message ) {
 		echo $message;
 	}
+
+	date_default_timezone_set( $pre );
+
 	echo '</div>';
 }
 
