@@ -45,13 +45,16 @@ If you run into a problem or have a question, contact me ([contact form](http://
 == Changelog ==
 
 = 1.0.1 =
-* Launch.
+* Fixed a bug where imported tweet times could be set to the future
 
 = 1.0 =
 * Launch.
 
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+* Fixed a bug where imported tweet times could be set to the future
 
 = 1.0 =
 * Launch
