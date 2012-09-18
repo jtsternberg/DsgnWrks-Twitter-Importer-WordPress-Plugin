@@ -6,7 +6,7 @@ Description: Helps you to backup your tweets while allowing you to have a site t
 Author URI: http://dsgnwrks.pro
 Author: DsgnWrks
 Donate link: http://dsgnwrks.pro/give/
-Version: 1.1
+Version: 1.0.1
 */
 
 define( 'DSTWEETS_ID', 'dw-twitter-importer-settings');
