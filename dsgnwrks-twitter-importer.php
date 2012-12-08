@@ -6,7 +6,7 @@ Description: Helps you to backup your tweets while allowing you to have a site t
 Author URI: http://dsgnwrks.pro
 Author: DsgnWrks
 Donate link: http://dsgnwrks.pro/give/
-Version: 1.0.1
+Version: 1.0.2
 */
 
 define( 'DSTWEETS_ID', 'dw-twitter-importer-settings');
@@ -84,7 +84,7 @@ function dw_twitter_settings_validate( $opts ) {
 					$opts[$user][$key] = '';
 				}
 				else {
-					$opts[$user][$key] = dsgnwrks_filter( $opt, 'absint', '' );
+					$opts[$user][$key] = dw_tweet_filter( $opt, 'absint', '' );
 				}
 			} else {
 				$opts[$user][$key] = dw_tweet_filter( $opt );
