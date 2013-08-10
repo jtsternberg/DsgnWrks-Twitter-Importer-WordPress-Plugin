@@ -10,14 +10,16 @@ Author: Jtsternberg
 Donate link: http://j.ustin.co/rYL89n
 Requires at least: 3.1
 Tested up to: 3.4.1
-Stable tag: 1.0.2
-Version: 1.0.2
+Stable tag: 1.1.0
+Version: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Backup your tweets & display your twitter archive. Supports importing to custom post-types & adding custom taxonomies.
 
 == Description ==
+
+**This plugin used the Twitter 1.0 api which is now expired. A new version is in the works, but until that is released, this plugin has been rendered useless.**
 
 In the spirit of WordPress and "owning your data," this plugin will allow you to import and backup your tweets to your WordPress site. Includes robust options to allow you to control the imported posts formatting including built-in support for WordPress custom post-types, custom taxonomies, post-formats. Add an unlimited number of user accounts for backup and importing.
 
