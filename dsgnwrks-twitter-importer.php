@@ -25,7 +25,7 @@ class DsgnWrksTwitter {
 		add_action( 'admin_init', array( $this, 'init' ) );
 		add_action( 'admin_menu', array( $this, 'admin_setup' ) );
 		add_action( 'current_screen', array( $this, 'redirect' ) );
-		// Make sure we have our metabox class
+		// Make sure we have our Twitter class
 		if ( ! class_exists( 'TwitterWP' ) )
 			require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
 	}
