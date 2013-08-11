@@ -9,6 +9,9 @@ Donate link: http://dsgnwrks.pro/give/
 Version: 1.1.0
 */
 
+define( '_DWTW_PATH', plugin_dir_path( __FILE__ ) );
+define( '_DWTW_URL', plugins_url('/', __FILE__ ) );
+
 class DsgnWrksTwitter {
 
 	protected $plugin_name = 'DsgnWrks Twitter Importer';
@@ -16,14 +19,20 @@ class DsgnWrksTwitter {
 	protected $pre = 'dsgnwrks_tweet_';
 	protected $optkey = 'dsgnwrks_tweet_options';
 	protected $plugin_page;
+	protected $tw;
 
 	function __construct() {
 		add_action( 'admin_init', array( $this, 'init' ) );
 		add_action( 'admin_menu', array( $this, 'admin_setup' ) );
 		add_action( 'current_screen', array( $this, 'redirect' ) );
+		// Make sure we have our metabox class
+		if ( ! class_exists( 'TwitterWP' ) )
+			require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
 	}
 
 	public function init() {
+
+		add_action( 'all_admin_notices', array( $this, 'testing' )  );
 
 		$this->plugin_page = add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
 
@@ -381,6 +390,43 @@ class DsgnWrksTwitter {
 		return add_query_arg( array( 'page' => $this->plugin_id, 'tweetimport' => 'true' ), admin_url( $GLOBALS['pagenow'] ) );
 	}
 
+	public function twitterwp() {
+		$this->tw = $this->tw ? $this->tw : TwitterWP::start( '0=YrPAw3bqVq6P99TPx1VHug&1=EHMuLykgzg5xam8eG1mnkBIvHsHcwNoYh9QhjbA&2=24203273-MqOWFPQZZLGf4RaZSEVLOxalZAa9rCg1NCMEoCYMw&3=12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ' /*12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ */ );
+		return $this->tw;
+	}
+
+	public function testing() {
+		echo '<div id="message" class="updated"><p>';
+		// require_once( 'sampledata.php' );
+		// echo '<pre>$this->sample_tweets: '. print_r( count( $this->sample_tweets ), true ) .'</pre>';
+
+			$tw = $this->twitterwp();
+
+			if ( is_wp_error( $tw ) ) {
+				echo '<p>error: '. $tw->get_error_messages() .'</p>';
+			} else {
+				echo '<pre>$app_data = '. var_export( TwitterWP::app(), true ) .'</pre>';
+
+				echo '<pre>'. htmlentities( print_r( $tw, true ) ) .'</pre><pre>';
+				echo '<pre>'. htmlentities( print_r( $tw->hello(), true ) ) .'</pre><pre>';
+				// $me = $tw->get_tweets( 'jtsternberg', 10 );
+				$me = $tw->authenticate_user( 'jtsternberg' );
+
+				if ( is_wp_error( $me ) ) {
+					echo '<pre>$me_error = '. var_export( $me->get_error_messages(), true ) .'</pre>';
+				}
+				else {
+					wp_die( '<pre>$this->sample_tweets = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .';</pre>' );
+					echo '<hr/>';
+					echo '<pre>$me: '. print_r( $me, true ) .'</pre>';
+				}
+			}
+
+
+		echo '</p></div>';
+
+	}
+
 }
 
 new DsgnWrksTwitter;
@@ -403,160 +449,35 @@ if ( !function_exists( 'wp_trim_words' ) ) {
 	}
 }
 
+// add_action( 'all_admin_notices', 'testing_twitter_api');
+function testing_twitter_api() {
+	echo '<div id="message" class="updated"><p>';
 
 
-class DsgnWrksTwitterAuth {
+	$twitter = new DsgnWrksTwitterAuth();
 
-	protected $url = 'https://api.twitter.com/1.1/';
+	// Get user's tweets
+	$tweets = $twitter->get_tweets( 'tw2113', 2 );
 
-	protected function authenticate( $user, $return = true ) {
+	// uses proper wp_error objects
+	if ( is_wp_error( $tweets ) )
+		echo implode( '<br/>', $tweets->get_error_messages( 'twitterwp_error' ) );
+	else
+		echo '<pre>'. htmlentities( print_r( $tweets, true ) ) .'</pre>';
 
-		$body = json_decode( $body );
+	echo '<br/>';
+	echo '<hr/>';
+	echo '<br/>';
 
-		if ( $body && !empty( $response['headers']['status'] ) && $response['headers']['status'] == '200 OK' ) {
-			if ( $return == false ) $body = null;
-			$noauth = '';
-			$badauth = 'good';
-		} else {
-			$body = null;
-			$badauth = 'error';
-			$noauth = true;
-		}
+	// Get user's profile
+	$user = $twitter->authenticate_user( 'tw2113' );
 
-		return array(
-			'response' => $body,
-			'badauth' => $badauth,
-			'noauth' => $noauth,
-		);
+	// uses proper wp_error objects
+	if ( is_wp_error( $user ) )
+		echo implode( '<br/>', $user->get_error_messages( 'twitterwp_error' ) );
+	else
+		echo '<pre>'. htmlentities( print_r( $user, true ) ) .'</pre>';
 
-	}
+	echo '</p></div>';
 
-	function get_tweets( $user = '', $count = 1 ) {
-
-		$this->user = $user;
-
-
-		$url = $this->twAPIurl( array( 'screen_name' => $user, 'count'=> $count ) );
-		$args = $this->header_args( array( 'count' => $count ) );
-		$response = wp_remote_get( $url, $args );
-
-		if( is_wp_error( $response ) )
-		   return '<strong>ERROR:</strong> '. $response->get_error_message();
-
-		$error = 'Could not access Twitter feed.';
-		return $this->returnData( $response, $error );
-
-	}
-
-	function authenticate_user( $user = '' ) {
-
-		$this->user = $user;
-
-		$url = $this->twAPIurl( array( 'screen_name' => $user ), 'users/lookup.json' );
-		$args = $this->header_args();
-		$response = wp_remote_get( $url, $args );
-
-		if( is_wp_error( $response ) )
-		   return false;
-
-		$error = 'Could not access Twitter user.';
-		return $this->returnData( $response, $error );
-
-	}
-
-	protected function returnData( $response, $error_message = '' ) {
-
-		$body = wp_remote_retrieve_body( $response );
-		$json = json_decode( $body );
-
-		if ( isset( $json->errors ) ) {
-			$errors = new WP_Error( 'twitterwp_error', $error_message );
-
-			foreach ( $json->errors as $key => $error ) {
-
-				$errors->add( 'twitterwp_error', '<strong>ERROR '. $error->code .':</strong> '. $error->message );
-			}
-			return $errors;
-		}
-
-		return $json;
-	}
-
-	protected function header_args( $args = array() ) {
-
-		if ( !isset( $this->user ) || ! $this->user )
-			return null;
-
-		// Set our oauth data
-		$defaults = array(
-			'screen_name' => $this->user,
-			'oauth_consumer_key' => 'YrPAw3bqVq6P99TPx1VHug',
-			'oauth_nonce' => time(),
-			'oauth_signature_method' => 'HMAC-SHA1',
-			'oauth_token' => '24203273-MqOWFPQZZLGf4RaZSEVLOxalZAa9rCg1NCMEoCYMw',
-			'oauth_timestamp' => time(),
-			'oauth_version' => '1.0'
-		);
-
-		$oauth = wp_parse_args( $args, $defaults );
-
-		$base_info = $this->build_base( $this->base_url(), $oauth );
-		$composite_key = 'EHMuLykgzg5xam8eG1mnkBIvHsHcwNoYh9QhjbA&12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ';
-
-		// create our oauth signature
-		$oauth['oauth_signature'] = base64_encode( hash_hmac( 'sha1', $base_info, $composite_key, true ) );
-
-		$auth_args = array(
-			'sslverify' => false,
-			'headers' => array(
-				'Authorization' => 'OAuth '. $this->authorize_header( $oauth ),
-				'Expect' => false,
-				'Accept-Encoding' => false
-			),
-		);
-
-		return $auth_args;
-	}
-
-	protected function build_base( $baseURI, $params ) {
-		$base = array();
-		ksort( $params );
-		foreach( $params as $key => $value ){
-			$base[] = $key .'='. rawurlencode( $value );
-		}
-
-		return 'GET&'. rawurlencode( $baseURI ) .'&'. rawurlencode( implode( '&', $base ) );
-
-	}
-
-	protected function authorize_header( $oauth ) {
-		$header = '';
-		$values = array();
-		foreach( $oauth as $key => $value ) {
-			if ( $key == 'screen_name' || $key == 'count' )
-				continue;
-			$values[] = $key .'="'. rawurlencode( $value ) .'"';
-		}
-
-		$header .= implode( ', ', $values );
-
-		return $header;
-	}
-
-	protected function twAPIurl( $params = false, $trail = 'statuses/user_timeline.json' ) {
-
-		// append trailing path
-		$this->base_url = $this->url . $trail;
-		// append query args
-		return $params ? add_query_arg( $params, $this->base_url ) : $this->base_url;
-	}
-
-	protected function base_url() {
-
-		// set it up
-		if ( !isset( $this->base_url ) )
-			$this->twAPIurl();
-
-		return $this->base_url;
-	}
 }

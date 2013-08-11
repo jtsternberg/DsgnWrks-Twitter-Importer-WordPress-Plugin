@@ -1,3 +1,6 @@
 [submodule "lib/TwitterWP"]
 	path = lib/TwitterWP
 	url = git@github.com:jtsternberg/TwitterWP.git
+[submodule "TwitterWP"]
+	path = TwitterWP
+	url = https://jtsternberg@github.com/jtsternberg/TwitterWP.git
