@@ -15,11 +15,13 @@ define( '_DWTW_URL', plugins_url('/', __FILE__ ) );
 class DsgnWrksTwitter {
 
 	protected $plugin_name = 'DsgnWrks Twitter Importer';
-	protected $plugin_id = 'dw-twitter-importer-settings';
-	protected $pre = 'dsgnwrks_tweet_';
-	protected $optkey = 'dsgnwrks_tweet_options';
+	protected $plugin_id   = 'dw-twitter-importer-settings';
+	protected $pre         = 'dsgnwrks_tweet_';
+	protected $optkey      = 'dsgnwrks_tweet_options';
+	protected $opts        = false;
+	protected $users       = false;
+	protected $tw          = false;
 	protected $plugin_page;
-	protected $tw;
 
 	function __construct() {
 		add_action( 'admin_init', array( $this, 'init' ) );
@@ -31,8 +33,6 @@ class DsgnWrksTwitter {
 	}
 
 	public function init() {
-
-		add_action( 'all_admin_notices', array( $this, 'testing' )  );
 
 		$this->plugin_page = add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
 
@@ -59,18 +59,16 @@ class DsgnWrksTwitter {
 			$validated = $this->validate_user( $opts['user'] );
 
 			if ( $validated ) {
-				$response = $this->authenticate_user( $opts['user'] );
+				$exists = $this->twitterwp()->user_exists( $opts['user'] );
 
-				if ( is_wp_error( $response ) ) {
+				if ( ! $exists ) {
 					$opts['badauth'] = 'error';
 					$opts['noauth'] = true;
 				} else {
 					$opts['badauth'] = 'good';
 					$opts['noauth'] = '';
 
-					$settings = get_option( $this->optkey );
-					$settings['username'] = $opts['user'];
-					update_option( $this->optkey, $settings );
+					$this->update_options( 'username', $opts['user'] );
 				}
 
 			} else {
@@ -154,18 +152,18 @@ class DsgnWrksTwitter {
 
 	public function import() {
 
-		$opts = get_option( $this->optkey );
+		$opts = $this->options();
 		$id = $_POST[$this->optkey]['username'];
 		if ( !isset( $_GET['tweetimport'] ) || empty( $id ) ) return;
 
 		// @TODO https://dev.twitter.com/docs/working-with-timelines
-		$tweets = $this->get_tweets( $id, 200 );
+		$tweets = $this->twitterwp()->get_tweets( $id, 200 );
 
 		if ( is_wp_error( $tweets ) ) {
 			echo '<div id="message" class="error"><p>'. implode( '<br/>', $tweets->get_error_messages( 'twitterwp_error' ) ) . '</p></div>';
 
 			$opts[$id]['noauth'] = true;
-			update_option( $this->optkey, $opts );
+			$this->update_options( $opts );
 			return;
 		}
 
@@ -263,9 +261,12 @@ class DsgnWrksTwitter {
 		if ( !isset( $opts['author'] ) ) $opts['author'] = $user_ID;
 
 		$post_date = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) );
+
+		$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
+
 		$post = array(
 		  'post_author' => $opts['author'],
-		  'post_content' => iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ),
+		  'post_content' => $tweet_text,
 		  'post_date' => $post_date,
 		  'post_date_gmt' => $post_date,
 		  'post_status' => $opts['draft'],
@@ -311,7 +312,8 @@ class DsgnWrksTwitter {
 		update_post_meta( $new_post_id, 'tweet_user_mentions', $tweet->entities->user_mentions );
 
 		// media entities @TODO option to sideload media to WP
-		update_post_meta( $new_post_id, 'tweet_media', $tweet->entities->media );
+		if ( isset( $tweet->entities->media ) )
+			update_post_meta( $new_post_id, 'tweet_media', $tweet->entities->media );
 
 		// app/site used for tweeting
 		update_post_meta( $new_post_id, 'tweet_source', $tweet->source );
@@ -331,18 +333,18 @@ class DsgnWrksTwitter {
 	public function redirect() {
 
 		if ( isset( $_GET['delete-twitter-user'] ) ) {
-			$users = get_option( $this->pre.'users' );
+			$users = $this->users();
 			foreach ( $users as $key => $user ) {
 				if ( $user == $_GET['delete-twitter-user'] ) $delete = $key;
 			}
 			unset( $users[$delete] );
 			update_option( $this->pre.'users', $users );
 
-			$opts = get_option( $this->optkey );
+			$opts = $this->options();
 			unset( $opts[$_GET['delete-twitter-user']] );
 			if ( isset( $opts['username'] ) && $opts['username'] == $_GET['delete-twitter-user'] )
 				unset( $opts['username'] );
-			update_option( $this->optkey, $opts );
+			$this->update_options( $opts );
 
 			wp_redirect( remove_query_arg( 'delete-twitter-user' ), 307 );
 			exit;
@@ -391,40 +393,56 @@ class DsgnWrksTwitter {
 	}
 
 	public function twitterwp() {
-		$this->tw = $this->tw ? $this->tw : TwitterWP::start( '0=YrPAw3bqVq6P99TPx1VHug&1=EHMuLykgzg5xam8eG1mnkBIvHsHcwNoYh9QhjbA&2=24203273-MqOWFPQZZLGf4RaZSEVLOxalZAa9rCg1NCMEoCYMw&3=12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ' /*12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ */ );
+		$this->tw = $this->tw ? $this->tw : TwitterWP::start( '0=m39J9KuiCEajGFwRA3VzxQ&1=jazlUeGiKPkQVzPHZMDqlEKM9pqv84l93zyhTR6pIng&2=24203273-MqOWFPQZZLGf4RaZSEVLOxalZAa9rCg1NCMEoCYMw&3=12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ' /*12Ya5GLGgiHFV3YK6GnixUx50dvEEf2vMita2kOoFQ */ );
 		return $this->tw;
 	}
 
-	public function testing() {
-		echo '<div id="message" class="updated"><p>';
-		// require_once( 'sampledata.php' );
-		// echo '<pre>$this->sample_tweets: '. print_r( count( $this->sample_tweets ), true ) .'</pre>';
 
-			$tw = $this->twitterwp();
+	/**
+	 * Retrieve plugin's options (or optionally a specific value by key)
+	 * @param  string       $key key who's related value is desired
+	 * @return array|string      whole option array or specific value by key
+	 */
+	protected function options( $key = '' ) {
+		$this->opts = $this->opts ? $this->opts : get_option( $this->optkey );
 
-			if ( is_wp_error( $tw ) ) {
-				echo '<p>error: '. $tw->get_error_messages() .'</p>';
-			} else {
-				echo '<pre>$app_data = '. var_export( TwitterWP::app(), true ) .'</pre>';
+		if ( $key )
+			return isset( $this->opts[$key] ) ? $this->opts[$key] : false;
 
-				echo '<pre>'. htmlentities( print_r( $tw, true ) ) .'</pre><pre>';
-				echo '<pre>'. htmlentities( print_r( $tw->hello(), true ) ) .'</pre><pre>';
-				// $me = $tw->get_tweets( 'jtsternberg', 10 );
-				$me = $tw->authenticate_user( 'jtsternberg' );
+		return $this->opts;
+	}
 
-				if ( is_wp_error( $me ) ) {
-					echo '<pre>$me_error = '. var_export( $me->get_error_messages(), true ) .'</pre>';
-				}
-				else {
-					wp_die( '<pre>$this->sample_tweets = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .';</pre>' );
-					echo '<hr/>';
-					echo '<pre>$me: '. print_r( $me, true ) .'</pre>';
-				}
-			}
+	/**
+	 * Retrieve plugin's user option (or optionally a specific value by key)
+	 * @param  string       $key key who's related value is desired
+	 * @return array|string      whole option array or specific value by key
+	 */
+	protected function users( $key = '' ) {
+		$this->users = $this->users ? $this->users : get_option( $this->pre.'users' );
 
+		if ( $key )
+			return isset( $this->users[$key] ) ? $this->users[$key] : false;
 
-		echo '</p></div>';
+		return $this->users;
+	}
 
+	/**
+	 * Retrieve plugin's options (or optionally a specific value by key)
+	 * @param  string       $key key who's related value is desired
+	 * @return array|string      whole option array or specific value by key
+	 */
+	protected function update_options( $keyoropts, $value = '' ) {
+		$this->opts = $this->options();
+
+		if ( $value )
+			$this->opts[$keyoropts] = $value;
+		elseif ( is_array( $keyoropts ) )
+			$this->opts = $keyoropts;
+		else
+			return false;
+
+		update_option( $this->optkey, $this->opts );
+		return $this->opts;
 	}
 
 }
@@ -447,37 +465,4 @@ if ( !function_exists( 'wp_trim_words' ) ) {
 		}
 		return apply_filters( 'wp_trim_words', $text, $num_words, $more, $original_text );
 	}
-}
-
-// add_action( 'all_admin_notices', 'testing_twitter_api');
-function testing_twitter_api() {
-	echo '<div id="message" class="updated"><p>';
-
-
-	$twitter = new DsgnWrksTwitterAuth();
-
-	// Get user's tweets
-	$tweets = $twitter->get_tweets( 'tw2113', 2 );
-
-	// uses proper wp_error objects
-	if ( is_wp_error( $tweets ) )
-		echo implode( '<br/>', $tweets->get_error_messages( 'twitterwp_error' ) );
-	else
-		echo '<pre>'. htmlentities( print_r( $tweets, true ) ) .'</pre>';
-
-	echo '<br/>';
-	echo '<hr/>';
-	echo '<br/>';
-
-	// Get user's profile
-	$user = $twitter->authenticate_user( 'tw2113' );
-
-	// uses proper wp_error objects
-	if ( is_wp_error( $user ) )
-		echo implode( '<br/>', $user->get_error_messages( 'twitterwp_error' ) );
-	else
-		echo '<pre>'. htmlentities( print_r( $user, true ) ) .'</pre>';
-
-	echo '</p></div>';
-
 }

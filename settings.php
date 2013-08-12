@@ -4,11 +4,9 @@ if ( !current_user_can( 'manage_options' ) )  {
 }
 add_thickbox();
 
-$opts = get_option( $this->optkey );
+$opts = $this->options();
 $reg = get_option( $this->pre.'registration' );
-$users = get_option( $this->pre.'users' );
-$this->opts = &$opts;
-$this->users = &$users;
+$users = $this->users();
 
 // echo '<div id="message" class="updated"><p><pre>$opts: '. htmlentities( print_r( $opts, true ) ) .'</pre></p></div>';
 
@@ -19,8 +17,6 @@ if ( !empty( $reg ) && $reg['badauth'] == 'good' && !in_array( $reg['user'], $us
 
 	update_option( $this->pre.'users', $users );
 	update_option( $this->optkey, $opts );
-	delete_option( $this->pre.'registration' );
-	unset( $reg );
 }
 
 if ( !empty( $users ) && is_array( $users ) ) {
@@ -89,7 +85,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								$id = str_replace( ' ', '', strtolower( $user ) );
 								$class = ( !empty( $class ) || $nofeed == true ) ? '' : ' active';
 								if ( isset( $opts['username'] ) ) {
-									$class = ( $opts['username'] == $id ) ? ' active' : '';
+									$class = ( $opts['username'] == $id ) && ! $nofeed ? ' active' : '';
 								}
 								?>
 								<li class="tab-twitter-user<?php echo $class; ?>" id="tab-twitter-user-<?php echo $id; ?>">
@@ -127,7 +123,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 						$id = str_replace( ' ', '', strtolower( $user ) );
 						$active = ( !empty( $active ) || $nofeed == true ) ? '' : ' active';
 						if ( isset( $opts['username'] ) ) {
-							$active = ( $opts['username'] == $id ) ? ' active' : '';
+							$active = ( $opts['username'] == $id ) && !$nofeed ? ' active' : '';
 						}
 						?>
 						<div id="twitter-user-<?php echo $id; ?>" class="help-tab-content<?php echo $active; ?>">
@@ -437,3 +433,6 @@ if ( !empty( $users ) && is_array( $users ) ) {
 		</div>
 	</div>
 </div>
+<?php
+delete_option( $this->pre.'registration' );
+unset( $reg );
