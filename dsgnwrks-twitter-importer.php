@@ -34,83 +34,9 @@ class DsgnWrksTwitter {
 		// Load the plugin settings link shortcut.
 		add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( __FILE__ ) . 'dsgnwrks-twitter-importer.php' ), array( $this, 'settings_link' ) );
 
-		// @DEV adds a minutely schedule for testing cron
-		add_filter( 'cron_schedules', array( $this, 'minutely' ) );
-		add_action( 'all_admin_notices', array( $this, 'show_cron_notice' ) );
-
 		// Make sure we have our Twitter class
 		if ( ! class_exists( 'TwitterWP' ) )
 			require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
-	}
-
-	/**
-	 * Hooks to 'all_admin_notices' and displays auto-imported photo messages
-	 * @since  1.1.0
-	 */
-	function show_cron_notice() {
-
-		// check if we have any saved notices from our cron auto-import
-		$notices = get_option( 'dsgnwrks_imported_tweets_notice' );
-
-		// $notices = array(
-		// 	'jtsternberg' => array(
-		// 		array(
-		// 			'time' => 'December 2nd',
-		// 			'notice' => '@Ceagon Ha, i have a very similar snippet:',
-		// 		),
-		// 		array(
-		// 			'time' => 'July 30 2013',
-		// 			'notice' => 'Hey looky.. I wrote another blog post. This one comes with a freebie: Sublime Text 2 debugging snippets: http://t.co/NJH7KPq1b6',
-		// 		),
-		// 	),
-		// );
-		if ( !$notices )
-			return;
-
-		// if so, loop through and display them
-		echo '<div id="message" class="updated instagram-import-message"><h2>'. __( 'Tweets Imported', 'dsgnwrks' ) .'</h2><ul>';
-		foreach ( $notices as $userid => $tweets ) {
-			foreach ( $tweets as $key => $tweet ) {
-				echo '<li><strong>@'. $userid .' &mdash; '. $tweet['time'] .'</strong>';
-				echo $tweet['notice'] .'</li>';
-
-			}
-		}
-		echo '</ul><br><a href="'. add_query_arg( array() ) .'">'. __( 'Hide', 'dsgnwrks' ) .'</a></div>';
-		?>
-		<style type="text/css">
-		.updated.instagram-import-message {
-			overflow: hidden;
-			background: #F1F1F1;
-			border-color: #ccc;
-			padding: 0 0 10px 10px;
-			margin: 0;
-		}
-		.updated.instagram-import-message ol {
-			padding: 0;
-			margin: 0;
-			list-style-position: inside;
-		}
-		.updated.instagram-import-message li {
-			border-bottom: 1px solid #aaa;
-			margin-bottom: 10px;
-		}
-		.updated.instagram-import-message li, .updated.instagram-import-message p {
-			margin: 0 10px 0 0;
-			padding: 8px;
-		}
-		.updated.instagram-import-message strong {
-			display: block;
-		}
-		.updated.instagram-import-message hr {
-			display: block;
-			width: 100%;
-			clear: both;
-		}
-		</style>
-		<?php
-		// reset notices
-		update_option( 'dsgnwrks_imported_tweets_notice', '' );
 	}
 
 	/**
@@ -552,18 +478,6 @@ class DsgnWrksTwitter {
 		// Set our plugin page parameter
 		$this->plugin_page = $this->plugin_page ? $this->plugin_page : add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
 		return $this->plugin_page;
-	}
-
-	/**
-	 * @DEV Adds once minutely to the existing schedules for easier cron testing.
-	 * @since  1.1.0
-	 */
-	function minutely( $schedules ) {
-		$schedules['minutely'] = array(
-			'interval' => 60,
-			'display'  => 'Once Every Minute'
-		);
-		return $schedules;
 	}
 
 	public function testing() {
