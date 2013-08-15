@@ -24,17 +24,115 @@ class DsgnWrksTwitter {
 	protected $plugin_page;
 
 	function __construct() {
+
+		// i18n
+		load_plugin_textdomain( 'dsgnwrks', false, dirname( plugin_basename( __FILE__ ) ) );
+
 		add_action( 'admin_init', array( $this, 'init' ) );
 		add_action( 'admin_menu', array( $this, 'admin_setup' ) );
 		add_action( 'current_screen', array( $this, 'redirect' ) );
+		// Load the plugin settings link shortcut.
+		add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( __FILE__ ) . 'dsgnwrks-twitter-importer.php' ), array( $this, 'settings_link' ) );
+
+		// @DEV adds a minutely schedule for testing cron
+		add_filter( 'cron_schedules', array( $this, 'minutely' ) );
+		add_action( 'all_admin_notices', array( $this, 'show_cron_notice' ) );
+
 		// Make sure we have our Twitter class
 		if ( ! class_exists( 'TwitterWP' ) )
 			require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
 	}
 
+	/**
+	 * Hooks to 'all_admin_notices' and displays auto-imported photo messages
+	 * @since  1.1.0
+	 */
+	function show_cron_notice() {
+
+		// check if we have any saved notices from our cron auto-import
+		$notices = get_option( 'dsgnwrks_imported_tweets_notice' );
+
+		// $notices = array(
+		// 	'jtsternberg' => array(
+		// 		array(
+		// 			'time' => 'December 2nd',
+		// 			'notice' => '@Ceagon Ha, i have a very similar snippet:',
+		// 		),
+		// 		array(
+		// 			'time' => 'July 30 2013',
+		// 			'notice' => 'Hey looky.. I wrote another blog post. This one comes with a freebie: Sublime Text 2 debugging snippets: http://t.co/NJH7KPq1b6',
+		// 		),
+		// 	),
+		// );
+		if ( !$notices )
+			return;
+
+		// if so, loop through and display them
+		echo '<div id="message" class="updated instagram-import-message"><h2>'. __( 'Tweets Imported', 'dsgnwrks' ) .'</h2><ul>';
+		foreach ( $notices as $userid => $tweets ) {
+			foreach ( $tweets as $key => $tweet ) {
+				echo '<li><strong>@'. $userid .' &mdash; '. $tweet['time'] .'</strong>';
+				echo $tweet['notice'] .'</li>';
+
+			}
+		}
+		echo '</ul><br><a href="'. add_query_arg( array() ) .'">'. __( 'Hide', 'dsgnwrks' ) .'</a></div>';
+		?>
+		<style type="text/css">
+		.updated.instagram-import-message {
+			overflow: hidden;
+			background: #F1F1F1;
+			border-color: #ccc;
+			padding: 0 0 10px 10px;
+			margin: 0;
+		}
+		.updated.instagram-import-message ol {
+			padding: 0;
+			margin: 0;
+			list-style-position: inside;
+		}
+		.updated.instagram-import-message li {
+			border-bottom: 1px solid #aaa;
+			margin-bottom: 10px;
+		}
+		.updated.instagram-import-message li, .updated.instagram-import-message p {
+			margin: 0 10px 0 0;
+			padding: 8px;
+		}
+		.updated.instagram-import-message strong {
+			display: block;
+		}
+		.updated.instagram-import-message hr {
+			display: block;
+			width: 100%;
+			clear: both;
+		}
+		</style>
+		<?php
+		// reset notices
+		update_option( 'dsgnwrks_imported_tweets_notice', '' );
+	}
+
+	/**
+	 * Add Settings page to plugin action links in the Plugins table.
+	 *
+	 * @since 1.1.0
+	 * @param  array $links Default plugin action links.
+	 * @return array $links Amended plugin action links.
+	 */
+	public function settings_link( $links ) {
+
+		$setting_link = sprintf( '<a href="%s">%s</a>', $this->plugin_page(), __( 'Settings', 'dsgnwrks' ) );
+		array_unshift( $links, $setting_link );
+
+		return $links;
+
+	}
+
+
 	public function init() {
 
-		$this->plugin_page = add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
+		// add_action( 'all_admin_notices', array( $this, 'testing' )  );
 
 		if ( isset( $_GET['tweetimport'] ) ) {
 			set_transient( sanitize_title( urldecode( $_GET['tweetimport'] ) ) .'-tweetimportdone', date_i18n( 'l F jS, Y @ h:i:s A', strtotime( current_time('mysql') ) ), 14400 );
@@ -443,6 +541,81 @@ class DsgnWrksTwitter {
 
 		update_option( $this->optkey, $this->opts );
 		return $this->opts;
+	}
+
+	/**
+	 * Get's the url for the plugin admin page
+	 * @since  1.1.0
+	 * @return string plugin admin page url
+	 */
+	public function plugin_page() {
+		// Set our plugin page parameter
+		$this->plugin_page = $this->plugin_page ? $this->plugin_page : add_query_arg( 'page', $this->plugin_id, admin_url( '/tools.php' ) );
+		return $this->plugin_page;
+	}
+
+	/**
+	 * @DEV Adds once minutely to the existing schedules for easier cron testing.
+	 * @since  1.1.0
+	 */
+	function minutely( $schedules ) {
+		$schedules['minutely'] = array(
+			'interval' => 60,
+			'display'  => 'Once Every Minute'
+		);
+		return $schedules;
+	}
+
+	public function testing() {
+		echo '<div id="message" class="updated"><p>';
+
+		// $request = $this->twitterwp()->get_token();
+
+		// if ( is_wp_error( $request ) )
+		// 	$this->twitterwp()->show_wp_error( $request );
+
+
+		// $status = $this->twitterwp()->rate_limit_status();
+		// if ( is_wp_error( $status ) )
+		// 	$this->twitterwp()->show_wp_error( $status );
+		// print( '<pre>'. htmlentities( print_r( $status, true ) ) .'</pre>' );
+
+
+		// require_once( 'sampledata.php' );
+		// foreach ( $this->sample_tweets as $key => $tweet ) {
+		// 	echo htmlentities( iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) ).'<br>';
+		// }
+		// wp_die( '<xmp>$this->sample_tweets: '. print_r( wp_list_pluck( $this->sample_tweets, 'text' ), true ) .'</xmp>' );
+
+			$tw = $this->twitterwp();
+
+			if ( is_wp_error( $tw ) ) {
+				echo '<p>error: '. $tw->get_error_messages() .'</p>';
+			} else {
+
+				echo '<pre>'. htmlentities( print_r( $tw, true ) ) .'</pre><pre>';
+				// $me = $tw->user_exists( 'jtsternberg' ) ? $tw->get_tweets( 'jtsternberg', 2 ) : false;
+				$me = $tw->user_exists( 'jtsternberg' ) ? $tw->get_user() : false;
+
+				if ( !$me || is_wp_error( $me ) ) {
+					echo '<hr/>';
+					echo '<h2>wp_error</h2>';
+					echo implode( '<br/>', $me->get_error_messages( 'twitterwp_error' ) );
+					echo '<pre>$me_error = '. var_export( $me->get_error_messages(), true ) .'</pre>';
+					echo '<hr/>';
+				}
+				else {
+					// wp_die( '<pre>'. print_r( wp_list_pluck( $me, 'text' ), true ) .'</pre>' );
+					wp_die( '<xmp> = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .'</xmp><xmp>$tweets: '. print_r( $tw->get_tweets( 'jtsternberg', 3), true ) .'</xmp>' );
+					wp_die( '<pre>$this->sample_tweets = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .';</pre>' );
+					echo '<hr/>';
+					echo '<pre>$me: '. print_r( $me, true ) .'</pre>';
+				}
+			}
+
+
+		echo '</p></div>';
+
 	}
 
 }
