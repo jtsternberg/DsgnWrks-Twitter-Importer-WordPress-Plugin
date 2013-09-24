@@ -597,6 +597,9 @@ class DsgnWrksTwitter {
 				// $me = $tw->user_exists( 'jtsternberg' ) ? $tw->get_tweets( 'jtsternberg', 2 ) : false;
 				$me = $tw->user_exists( 'jtsternberg' ) ? $tw->get_user() : false;
 
+				// $search = $tw->get_search_results( '#wdschat', 10 );
+				// wp_die( '<xmp>'. print_r( $search, true ) .'</xmp>' );
+
 				if ( !$me || is_wp_error( $me ) ) {
 					echo '<hr/>';
 					echo '<h2>wp_error</h2>';
