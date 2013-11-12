@@ -1,18 +1,18 @@
 # DsgnWrks Twitter Importer #
 
-**Contributors:** jtsternberg
-**Plugin Name:** DsgnWrks Twitter Importer
-**Plugin URI:** http://dsgnwrks.pro/plugins/dsgnwrks-twitter-importer
-**Tags:** twitter, tweets, import, backup, importer
-**Author URI:** http://about.me/jtsternberg
-**Author:** Jtsternberg
-**Donate link:** http://j.ustin.co/rYL89n
-**Requires at least:** 3.1
-**Tested up to:** 3.4.1
-**Stable tag:** 1.1.0
-**Version:** 1.1.0
-**License:** GPLv2 or later
-**License URI:** http://www.gnu.org/licenses/gpl-2.0.html
+**Contributors:** jtsternberg  
+**Plugin Name:** DsgnWrks Twitter Importer  
+**Plugin URI:** http://dsgnwrks.pro/plugins/dsgnwrks-twitter-importer  
+**Tags:** twitter, tweets, import, backup, importer  
+**Author URI:** http://about.me/jtsternberg  
+**Author:** Jtsternberg  
+**Donate link:** http://j.ustin.co/rYL89n  
+**Requires at least:** 3.1  
+**Tested up to:** 3.4.1  
+**Stable tag:** 1.1.0  
+**Version:** 1.1.0  
+**License:** GPLv2 or later  
+**License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
 Backup your tweets & display your twitter archive. Supports importing to custom post-types & adding custom taxonomies.
 
