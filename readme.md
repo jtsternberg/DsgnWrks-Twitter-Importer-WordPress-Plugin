@@ -41,10 +41,10 @@ If you run into a problem or have a question, contact me ([contact form](http://
 ## Screenshots ##
 
 1. Welcome Panel.
-![Welcome Panel.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/blob/raw/screenshot-1.jpg)
+![Welcome Panel.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/raw/master/screenshot-1.jpg)
 
 2. After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.
-![After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/blob/raw/screenshot-2.jpg)
+![After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/raw/master/screenshot-2.jpg)
 
 
 ## Changelog ##
