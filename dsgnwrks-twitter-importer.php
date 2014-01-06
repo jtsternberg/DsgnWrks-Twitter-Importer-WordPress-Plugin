@@ -608,6 +608,7 @@ class DsgnWrksTwitter {
 					echo '<hr/>';
 				}
 				else {
+					wp_die( '<xmp>'. print_r( $tw->get_list_tweets( 'jtsternberg', 'WDS', 3 ), true ) .'</xmp>' );
 					// wp_die( '<pre>'. print_r( wp_list_pluck( $me, 'text' ), true ) .'</pre>' );
 					wp_die( '<xmp> = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .'</xmp><xmp>$tweets: '. print_r( $tw->get_tweets( 'jtsternberg', 3), true ) .'</xmp>' );
 					wp_die( '<pre>$this->sample_tweets = '. str_replace( 'stdClass::__set_state', '(object) ', var_export( $me, true ) ) .';</pre>' );
