@@ -1,23 +1,22 @@
 <?php
-global $user_ID;
-
 if ( !current_user_can( 'manage_options' ) )  {
 	wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
 }
+add_thickbox();
 
-$opts = get_option( 'dsgnwrks_tweet_options' );
-$reg = get_option( 'dsgnwrks_tweet_registration' );
-$users = get_option( 'dsgnwrks_tweet_users' );
-// echo '<pre>'. htmlentities( print_r( $opts, true ) ) .'</pre>';
+$opts = $this->options();
+$reg = get_option( $this->pre.'registration' );
+$users = $this->users();
+
+// echo '<div id="message" class="updated"><p><pre>$opts: '. htmlentities( print_r( $opts, true ) ) .'</pre></p></div>';
+
 $users = ( !empty( $users ) ) ? $users : array();
 
 if ( !empty( $reg ) && $reg['badauth'] == 'good' && !in_array( $reg['user'], $users ) ) {
 	$users[] = $reg['user'];
 
-	update_option( 'dsgnwrks_tweet_users', $users );
-	update_option( 'dsgnwrks_tweet_options', $opts );
-	delete_option( 'dsgnwrks_tweet_registration' );
-	unset( $reg );
+	update_option( $this->pre.'users', $users );
+	update_option( $this->optkey, $opts );
 }
 
 if ( !empty( $users ) && is_array( $users ) ) {
@@ -29,13 +28,13 @@ if ( !empty( $users ) && is_array( $users ) ) {
 			$opts[$user]['yy'] = '';
 			$opts[$user]['date-filter'] = 0;
 			$opts[$user]['remove-date-filter'] = '';
-			update_option( 'dsgnwrks_tweet_options', $opts );
+			update_option( $this->optkey, $opts );
 		}
 
 		if ( !empty( $opts[$user]['remove-tag-filter'] ) ) {
 			$opts[$user]['tag-filter'] = '';
 			$opts[$user]['remove-tag-filter'] = '';
-			update_option( 'dsgnwrks_tweet_options', $opts );
+			update_option( $this->optkey, $opts );
 		}
 
 		if ( !empty( $opts[$user]['tag-filter'] ) ) {
@@ -86,7 +85,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								$id = str_replace( ' ', '', strtolower( $user ) );
 								$class = ( !empty( $class ) || $nofeed == true ) ? '' : ' active';
 								if ( isset( $opts['username'] ) ) {
-									$class = ( $opts['username'] == $id ) ? ' active' : '';
+									$class = ( $opts['username'] == $id ) && ! $nofeed ? ' active' : '';
 								}
 								?>
 								<li class="tab-twitter-user<?php echo $class; ?>" id="tab-twitter-user-<?php echo $id; ?>">
@@ -98,7 +97,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 							$user = 'Create User';
 							$class = str_replace( ' ', '', strtolower( $user ) );
 							?>
-							<li class="tab-twitter-user" id="tab-twitter-user-<?php echo $class; ?>" class="active">
+							<li class="tab-twitter-user active" id="tab-twitter-user-<?php echo $class; ?>">
 								<a href="#twitter-user-<?php echo $class; ?>"><?php echo $user; ?></a>
 							</li>
 							<?php
@@ -118,13 +117,13 @@ if ( !empty( $users ) && is_array( $users ) ) {
 				if ( !empty( $users ) && is_array( $users ) ) {
 					?>
 					<form class="twitter-importer" method="post" action="options.php">
-					<?php settings_fields('dsgnwrks_twitter_importer_settings');
+					<?php settings_fields( 'dsgnwrks_twitter_importer_settings' );
 
 					foreach ( $users as $key => $user ) {
 						$id = str_replace( ' ', '', strtolower( $user ) );
 						$active = ( !empty( $active ) || $nofeed == true ) ? '' : ' active';
 						if ( isset( $opts['username'] ) ) {
-							$active = ( $opts['username'] == $id ) ? ' active' : '';
+							$active = ( $opts['username'] == $id ) && !$nofeed ? ' active' : '';
 						}
 						?>
 						<div id="twitter-user-<?php echo $id; ?>" class="help-tab-content<?php echo $active; ?>">
@@ -153,7 +152,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<td><input type="text" placeholder="e.g. keeper, fortheblog" name="dsgnwrks_tweet_options[<?php echo $id; ?>][tag-filter]" value="<?php echo $tag_filter; ?>" />
 								<?php
 									if ( !empty( $opts[$id]['tag-filter'] ) ) {
-										echo '<p><label><input type="checkbox" name="dsgnwrks_tweet_options['.$id.'][remove-tag-filter]" value="yes" /> <em> Remove filter</em></label></p>';
+										echo '<p><label><input type="checkbox" name="'.$this->optkey.'['.$id.'][remove-tag-filter]" value="yes" /> <em> Remove filter</em></label></p>';
 									}
 								?>
 								</td>
@@ -180,9 +179,9 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									}
 									else { $date = 'No date selected'; }
 									$date = '<p style="padding-bottom: 2px; margin-bottom: 2px;" id="timestamp"> '. $date .'</p>';
-									$date .= '<input type="hidden" name="dsgnwrks_tweet_options['.$id.'][date-filter]" value="'. $date_filter .'" />';
+									$date .= '<input type="hidden" name="'.$this->optkey.'['.$id.'][date-filter]" value="'. $date_filter .'" />';
 
-									$month = '<select id="twitter-mm" name="dsgnwrks_tweet_options['.$id.'][mm]">\n';
+									$month = '<select id="twitter-mm" name="'.$this->optkey.'['.$id.'][mm]">\n';
 									$month .= '<option value="">Month</option>';
 									for ( $i = 1; $i < 13; $i = $i +1 ) {
 										$monthnum = zeroise($i, 2);
@@ -193,7 +192,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									}
 									$month .= '</select>';
 
-									$day = '<select style="width: 5em;" id="twitter-dd" name="dsgnwrks_tweet_options['.$id.'][dd]">\n';
+									$day = '<select style="width: 5em;" id="twitter-dd" name="'.$this->optkey.'['.$id.'][dd]">\n';
 									$day .= '<option value="">Day</option>';
 									for ( $i = 1; $i < 32; $i = $i +1 ) {
 										$daynum = zeroise($i, 2);
@@ -204,7 +203,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									}
 									$day .= '</select>';
 
-									$year = '<select style="width: 5em;" id="twitter-yy" name="dsgnwrks_tweet_options['.$id.'][yy]">\n';
+									$year = '<select style="width: 5em;" id="twitter-yy" name="'.$this->optkey.'['.$id.'][yy]">\n';
 									$year .= '<option value="">Year</option>';
 									for ( $i = date( 'Y' ); $i >= 2010; $i = $i -1 ) {
 										$yearnum = zeroise($i, 4);
@@ -221,7 +220,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									printf(__('%1$s %2$s %3$s %4$s'), $date, $month, $day, $year );
 
 									if ( $complete[$id] == true ) {
-										echo '<p><label><input type="checkbox" name="dsgnwrks_tweet_options['.$id.'][remove-date-filter]" value="yes" /> <em> Remove filter</em></label></p>';
+										echo '<p><label><input type="checkbox" name="'.$this->optkey.'['.$id.'][remove-date-filter]" value="yes" /> <em> Remove filter</em></label></p>';
 									}
 									?>
 
@@ -290,7 +289,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								<td>
 									<?php
 									$selected_user = isset( $opts[$id]['author'] ) ? $opts[$id]['author'] : '';
-									wp_dropdown_users( array( 'name' => 'dsgnwrks_tweet_options['.$id.'][author]', 'selected' => $selected_user ) );
+									wp_dropdown_users( array( 'name' => $this->optkey.'['.$id.'][author]', 'selected' => $selected_user ) );
 									?>
 
 								</td>
@@ -316,7 +315,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 												<?php foreach ( $post_formats[0] as $format ) : ?>
 												<option value="<?php echo esc_attr( $format ); ?>" <?php selected( $opts[$id]['post_format'], $format ); ?>><?php echo esc_html( get_post_format_string( $format ) ); ?></option>
 
-												<?php endforeach; ?><br />
+												<?php endforeach; ?>
 
 											</select>
 
@@ -326,15 +325,35 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									}
 								}
 
+								$taxs = get_taxonomies( array( 'public' => true ), 'objects' );
+								$taxes = array();
 
-								$args = array(
-									'public' => true,
-									);
-								$taxs = get_taxonomies( $args, 'objects' );
+								?>
+								<tr valign="top">
+								<th scope="row"><strong><?php _e( 'Save Tweet hashtags as one of your taxonomies (tags, categories, etc):', 'dsgnwrks' ); ?></strong></th>
+								<td>
+									<?php
+
+									$hash_tax = isset( $opts[$id]['hashtags_as_tax'] ) ? $opts[$id]['hashtags_as_tax'] : '';
+
+									echo '<select id="'.$this->optkey.'-'.$id.'-hashtags_as_tax" name="'.$this->optkey.'['.$id.'][hashtags_as_tax]">';
+										echo '<option class="empty" value="" '. selected( $hash_tax, '', false ) .'>'. __( '&mdash; Select &mdash;', 'dsgnwrks' ) .'</option>';
+										foreach ( $taxs as $key => $tax ) {
+
+											$pt_taxes = get_object_taxonomies( $cur_post_type );
+											$disabled = !in_array( $tax->name, $pt_taxes );
+											echo '<option class="taxonomy-'. $tax->name .'" value="'. esc_attr( $tax->name ) .'" ', selected( $hash_tax, $tax->name ), ' ', disabled( $disabled ) ,'>'. esc_html( $tax->label ) .'</option>';
+
+										}
+									echo '</select>';
+									?>
+
+								</td>
+								</tr>
+								<?php
+
 
 								foreach ( $taxs as $key => $tax ) {
-
-									if ( $tax->label == 'Format' ) continue;
 
 									$opts[$id][$tax->name] = !empty( $opts[$id][$tax->name] ) ? esc_attr( $opts[$id][$tax->name] ) : '';
 
@@ -343,7 +362,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 									if ( $tax->name == 'post_tag' )  $placeholder = 'e.g. beach, sunrise';
 
 									$tax_section_label = '<strong>'.$tax->label.' to apply to imported posts.</strong><br/>Please separate '.strtolower( $tax->label ).' with commas'."\n";
-									$tax_section_input = '<input type="text" placeholder="'.$placeholder.'" name="dsgnwrks_tweet_options['.$id.']['.$tax->name.']" value="'.$opts[$id][$tax->name].'" />'."\n";
+									$tax_section_input = '<input type="text" placeholder="'.$placeholder.'" name="'.$this->optkey.'['.$id.']['.$tax->name.']" value="'.$opts[$id][$tax->name].'" />'."\n";
 
 									?>
 									<tr valign="top" class="taxonomies-add taxonomy-<?php echo $tax->name; ?>">
@@ -358,8 +377,8 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								}
 
-								echo '<input type="hidden" name="dsgnwrks_tweet_options[username]" value="replaceme" />';
-								// echo '<input id="replaceme" type="hidden" name="dsgnwrks_tweet_options[saved]" value="'. $id .'" />';
+								echo '<input type="hidden" name="'.$this->optkey.'[username]" value="replaceme" />';
+								// echo '<input id="replaceme" type="hidden" name="'.$this->optkey.'[saved]" value="'. $id .'" />';
 
 								$trans = get_transient( $id .'-tweetimportdone' );
 
@@ -375,7 +394,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 							<p class="submit">
 								<?php
-								$importlink = dw_get_tweetimport_link( $id );
+								$importlink = $this->import_link( $id );
 								?>
 								<input type="submit" id="save-<?php echo sanitize_title( $id ); ?>" name="save" class="button-primary" value="<?php _e( 'Save' ) ?>" />
 								<input type="submit" id="import-<?php echo sanitize_title( $id ); ?>" name="<?php echo $importlink; ?>" class="button-secondary import-button" value="<?php _e( 'Import' ) ?>" />
@@ -389,13 +408,16 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 					<?php
 				} else {
+					// $message = '<p>Welcome to the Twitter Importer! Click to be taken to Twitter\'s site to securely authorize this plugin for use with your account.</p>';
+					// $this->user_form( $users, $message );
+
 					$message = 'Welcome to Twitter Importer! Enter a Twitter username, and we\'ll get started.';
-					dw_twitter_settings_user_form( $reg, true, $message );
+					$this->user_form( $reg, $message );
 				}
 
 				if ( !$nogo ) { ?>
 					<div id="add-another-user" class="help-tab-content <?php echo ( $nofeed == true ) ? ' active' : ''; ?>">
-						<?php dw_twitter_settings_user_form( $reg ); ?>
+						<?php $this->user_form( $reg ); ?>
 					</div>
 				<?php } ?>
 				</div>
@@ -411,31 +433,6 @@ if ( !empty( $users ) && is_array( $users ) ) {
 		</div>
 	</div>
 </div>
-
 <?php
-function dw_twitter_settings_user_form( $reg, $echo = true, $message = 'Enter another Twitter username to import their tweets.' ) {
-
-	$id = 'dsgnwrks_tweet_registration[user]';
-
-	?>
-	<form class="twitter-importer" method="post" action="options.php">
-		<?php settings_fields('dsgnwrks_twitter_importer_users'); ?>
-		<table class="form-table">
-			<p><?php echo $message; ?></p>
-			<tr valign="top">
-			<th scope="row"><label for="<?php echo $id; ?>"><strong>Twitter Username:</strong></label></th>
-			<td><strong class="atsymbol">@</strong><input type="text" id="<?php echo $id; ?>" name="<?php echo $id; ?>" value="<?php if ( $echo == true ) echo esc_attr( $reg['user'] ); ?>" /></td>
-			</tr>
-		</table>
-		<p class="submit">
-			<input type="submit" name="save" class="button-primary" value="<?php echo _e( 'Save' ) ?>" />
-		</p>
-	</form>
-
-	<?php
-}
-
-function dw_get_tweetimport_link( $id ) {
-	// return add_query_arg( 'tweetimport', $id, add_query_arg( 'page', DSTWEETS_ID, admin_url( $GLOBALS['pagenow'] ) ) );
-	return add_query_arg( array( 'page' => DSTWEETS_ID, 'tweetimport' => 'true' ), admin_url( $GLOBALS['pagenow'] ) );
-}
+delete_option( $this->pre.'registration' );
+unset( $reg );

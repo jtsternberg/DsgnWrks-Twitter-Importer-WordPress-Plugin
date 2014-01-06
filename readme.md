@@ -16,13 +16,15 @@
 
 Backup your tweets & display your twitter archive. Supports importing to custom post-types & adding custom taxonomies.
 
-## Description ##
+Now supports the Twitter 1.1 API.
 
-**This plugin used the Twitter 1.0 api which is now expired. A new version is in the works, but until that is released, this plugin has been rendered useless.**
+## Description ##
 
 In the spirit of WordPress and "owning your data," this plugin will allow you to import and backup your tweets to your WordPress site. Includes robust options to allow you to control the imported posts formatting including built-in support for WordPress custom post-types, custom taxonomies, post-formats. Add an unlimited number of user accounts for backup and importing.
 
 Plugin is built with developers in mind and has many filters to manipulate the imported posts.
+
+1.1.0: Updated to work with the Twitter 1.1 API. Uses the [TwitterWP](https://github.com/jtsternberg/TwitterWP) library.
 
 Like this plugin? Checkout the [DsgnWrks Instagram Importer](http://j.ustin.co/QbG3mQ). Feel free to [fork this plugin on github](http://j.ustin.co/QbQQ0a).
 
@@ -41,13 +43,16 @@ If you run into a problem or have a question, contact me ([contact form](http://
 ## Screenshots ##
 
 1. Welcome Panel.
-![Welcome Panel.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/raw/master/screenshot-1.jpg)
+![Welcome Panel.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/blob/raw/screenshot-1.jpg)
 
 2. After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.
-![After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/raw/master/screenshot-2.jpg)
+![After adding a user, this is the options panel you'll be presented with. If you select a custom post-type in the post-type selector, the options may change based on the post-type's supports, as well as any custom taxonomies.](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/blob/raw/screenshot-2.jpg)
 
 
 ## Changelog ##
+
+### 1.1.0 ###
+* Updated to work with the Twitter 1.1 API. Uses the [TwitterWP](https://github.com/jtsternberg/TwitterWP) library.
 
 ### 1.0.2 ###
 * Fixed incorrectly named function
@@ -60,6 +65,9 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 
 ## Upgrade Notice ##
+
+### 1.1.0 ###
+* Updated to work with the Twitter 1.1 API. Uses the [TwitterWP](https://github.com/jtsternberg/TwitterWP) library.
 
 ### 1.0.2 ###
 * Fixed incorrectly named function
