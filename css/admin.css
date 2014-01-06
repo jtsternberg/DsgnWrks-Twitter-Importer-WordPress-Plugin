@@ -6,22 +6,41 @@
 }
 .twitter-importer .form-table {
 	margin-top: 0;
+	background: transparent;
+	border-collapse: separate;
+	border-spacing: 0 10px;
 }
 .twitter-importer .form-table th {
 	width: 410px;
+	padding: 10px;
+	font-weight: normal;
+}
+.twitter-importer .form-table td {
+	max-width: 230px;
+	margin-bottom: 9px;
+	padding: 8px 10px;
+	line-height: 1.666666667em;
+
+}
+.twitter-importer .form-table th, .twitter-importer .form-table td {
+	background: #E8F0F3;
 }
 .twitter-importer .form-table tr {
-	background: #eee;
+	background: #E8F0F3;
 	border: none;
 	border-bottom: 10px solid #fff;
 }
 .twitter-importer .form-table tr.info {
-	background: #FFF;
+	background: transparent;
 	border: none;
 	border-bottom: 10px solid #fff;
 }
 .twitter-importer .form-table tr.info th {
 	padding: 0;
+}
+.twitter-importer .form-table tr.info th, .twitter-importer .form-table tr.info td {
+	background: transparent;
+	border-bottom: 1px solid transparent;
 }
 
 
@@ -56,11 +75,11 @@
 	padding: 0 220px 0 20px;
 }
 
-
 .jtsocial a {
 	display: block;
 	margin-bottom: 10px;
 	text-align: right;
+	font-size: 90%;
 }
 .jtsocial a span {
 	background: url(../images/social.png) no-repeat top left;

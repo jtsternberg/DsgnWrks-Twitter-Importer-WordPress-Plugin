@@ -626,7 +626,7 @@ class DsgnWrksTwitter {
 
 new DsgnWrksTwitter;
 
-if ( !function_exists( 'wp_trim_words' ) ) {
+if ( ! function_exists( 'wp_trim_words' ) ) {
 	function wp_trim_words( $text, $num_words = 55, $more = null ) {
 		if ( null === $more )
 			$more = __( '...' );
