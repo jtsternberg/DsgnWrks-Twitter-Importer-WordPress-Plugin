@@ -35,8 +35,7 @@ class DsgnWrksTwitter {
 		add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( __FILE__ ) . 'dsgnwrks-twitter-importer.php' ), array( $this, 'settings_link' ) );
 
 		// Make sure we have our Twitter class
-		if ( ! class_exists( 'TwitterWP' ) )
-			require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
+		require_once( _DWTW_PATH .'TwitterWP/lib/TwitterWP.php' );
 	}
 
 	/**
