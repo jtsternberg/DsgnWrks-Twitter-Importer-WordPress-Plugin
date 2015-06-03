@@ -8,9 +8,8 @@
 **Author:** Jtsternberg  
 **Donate link:** http://j.ustin.co/rYL89n  
 **Requires at least:** 3.1  
-**Tested up to:** 3.4.1  
-**Stable tag:** 1.1.0  
-**Version:** 1.1.0  
+**Tested up to:** 4.2.2  
+**Version:** 1.1.1  
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
@@ -51,6 +50,9 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 ## Changelog ##
 
+### 1.1.1 ###
+* Add `dw_twitter_api_get_tweets` filter for overriding the TwitterWP method for getting tweets. This enables importing from favorites/lists, etc.
+
 ### 1.1.0 ###
 * Updated to work with the Twitter 1.1 API. Uses the [TwitterWP](https://github.com/jtsternberg/TwitterWP) library.
 
@@ -66,6 +68,9 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 ## Upgrade Notice ##
 
+### 1.1.1 ###
+* Add `dw_twitter_api_get_tweets` filter for overriding the TwitterWP method for getting tweets. This enables importing from favorites/lists, etc.
+
 ### 1.1.0 ###
 * Updated to work with the Twitter 1.1 API. Uses the [TwitterWP](https://github.com/jtsternberg/TwitterWP) library.
 
@@ -77,6 +82,3 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 ### 1.0 ###
 * Launch
-
-
-[test](#description)
