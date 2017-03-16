@@ -200,8 +200,11 @@ class DsgnWrksTwitter {
 
 		echo '<div id="message" class="updated">';
 
-		$pre = date('e');
-		date_default_timezone_set( get_option( 'timezone_string' ) );
+		$tz = get_option( 'timezone_string' );
+		if ( $tz ) {
+			$pre = date('e');
+			date_default_timezone_set( $tz );
+		}
 
 		$messages = $this->messages( $tweets, $opts[$id] );
 
@@ -213,7 +216,9 @@ class DsgnWrksTwitter {
 			echo $message;
 		}
 
-		date_default_timezone_set( $pre );
+		if ( $tz ) {
+			date_default_timezone_set( $pre );
+		}
 
 		echo '</div>';
 	}
