@@ -10,7 +10,7 @@ Author: Jtsternberg
 Donate link: http://j.ustin.co/rYL89n
 Requires at least: 3.1
 Tested up to: 4.7.1
-Version: 1.1.2
+Version: 1.1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,13 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 == Changelog ==
 
+= 1.1.3 =
+* Add cron/auto-import feature.
+* Use TwitterText lib to parse tweent text and add links, replace urls with tweet entities etc.
+* Use twitter text for post-title/slug instead of just timestamp.
+* Allow setting to post-format even if theme doesn't support.
+* Only set timezone during import if we have one set in WP settings
+
 = 1.1.2 =
 * Update the TwitterWP library to fix url encoding issues.
 
@@ -67,6 +74,13 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 
 == Upgrade Notice ==
+
+= 1.1.3 =
+* Add cron/auto-import feature.
+* Use TwitterText lib to parse tweent text and add links, replace urls with tweet entities etc.
+* Use twitter text for post-title/slug instead of just timestamp.
+* Allow setting to post-format even if theme doesn't support.
+* Only set timezone during import if we have one set in WP settings
 
 = 1.1.2 =
 * Update the TwitterWP library to fix url encoding issues.

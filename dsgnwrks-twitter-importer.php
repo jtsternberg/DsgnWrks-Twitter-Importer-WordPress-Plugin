@@ -6,7 +6,7 @@ Description: Helps you to backup your tweets while allowing you to have a site t
 Author URI: http://dsgnwrks.pro
 Author: DsgnWrks
 Donate link: http://dsgnwrks.pro/give/
-Version: 1.1.2
+Version: 1.1.3
 */
 
 define( '_DWTW_PATH', plugin_dir_path( __FILE__ ) );
