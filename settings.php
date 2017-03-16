@@ -2,11 +2,15 @@
 if ( !current_user_can( 'manage_options' ) )  {
 	wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
 }
-add_thickbox();
 
-$opts = $this->options();
+$opts = wp_parse_args( $this->options(), array(
+	'frequency' => 'never',
+	'username' => 'replaceme',
+) );
+
 $reg = get_option( $this->pre.'registration' );
 $users = $this->users();
+$schedules = wp_get_schedules();
 
 // echo '<div id="message" class="updated"><p><pre>$opts: '. htmlentities( print_r( $opts, true ) ) .'</pre></p></div>';
 
@@ -107,6 +111,9 @@ if ( !empty( $users ) && is_array( $users ) ) {
 							<li id="tab-add-another-user" <?php echo ( $nofeed == true ) ? 'class="active"' : ''; ?>>
 								<a href="#add-another-user">Add Another User</a>
 							</li>
+							<li id="tab-universal-options" <?php echo 'replaceme' == $opts['username'] ? 'class="active"' : ''; ?>>
+								<a href="#universal-options"><?php _e( 'Plugin Options', 'dsgnwrks' ); ?></a>
+							</li>
 						<?php } ?>
 					</ul>
 				</div>
@@ -118,6 +125,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 					?>
 					<form class="twitter-importer" method="post" action="options.php">
 					<?php settings_fields( 'dsgnwrks_twitter_importer_settings' );
+					wp_nonce_field( 'tweetimport-nonce', 'dw-tweetimporter' );
 
 					foreach ( $users as $key => $user ) {
 						$id = str_replace( ' ', '', strtolower( $user ) );
@@ -226,6 +234,27 @@ if ( !empty( $users ) && is_array( $users ) ) {
 
 								</td>
 								</tr>
+
+								<?php
+								// Our auto-import interval text. "Manual" if not set
+								$interval = ! $opts['frequency'] || 'never' == $opts['frequency'] || ! isset( $schedules[ $opts['frequency'] ]['display'] )
+									? 'Manual'
+									: strtolower( $schedules[ $opts['frequency'] ]['display'] );
+								?>
+								<tr valign="top"<?php echo $interval == 'Manual' ? ' class="disabled"' : ''; ?>>
+								<th scope="row">
+									<strong><?php _e( 'Auto-import future photos:', 'dsgnwrks' ); ?></strong><br/>
+									<?php if ( $interval == 'Manual' ) { ?>
+										<em><?php _e( 'Change import interval from "Manual" in the "Plugin Options" tab for this option to take effect.', 'dsgnwrks' ); ?></em>
+									<?php } else {
+										printf( __( 'Change import interval (%s) in the "Plugin Options" tab.', 'dsgnwrks' ), $interval );
+									} ?>
+								</th>
+								<td>
+									<input type="checkbox" name="<?php echo $this->optkey; ?>[<?php echo $id; ?>][auto_import]" <?php checked( isset( $opts[$id]['auto_import'] ) && 'yes' === $opts[$id]['auto_import'] ); ?> value="yes"/>
+								</td>
+								</tr>
+
 
 								<tr valign="top" class="info">
 								<th colspan="2">
@@ -378,14 +407,14 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								}
 
 								echo '<input type="hidden" name="'.$this->optkey.'[username]" value="replaceme" />';
-								// echo '<input id="replaceme" type="hidden" name="'.$this->optkey.'[saved]" value="'. $id .'" />';
 
-								$trans = get_transient( $id .'-tweetimportdone' );
+								$last = isset( $opts[$id]['lastimport'] ) ? $opts[$id]['lastimport'] : '';
+								echo '<input type="hidden" name="'.$this->optkey.'['.$id.'][lastimport]" value="'. esc_attr( $last ) .'" />';
 
-								if ( $trans ) { ?>
+								if ( $last ) { ?>
 									<tr valign="top" class="info">
 									<th colspan="2">
-										<?php echo '<p>Last updated: '. $trans .'</p>'; ?>
+										<?php echo '<p>Last import: '. date_i18n( 'l F jS, Y @ h:i:s A', $last ) .'</p>'; ?>
 
 									</th>
 									</tr>
@@ -404,6 +433,36 @@ if ( !empty( $users ) && is_array( $users ) ) {
 						<?php
 					}
 					?>
+					<div id="universal-options" class="help-tab-content <?php echo 'replaceme' == $opts['username'] ? ' active' : ''; ?>">
+						<table class="form-table">
+							<tbody>
+								<tr valign="top" class="info">
+									<th colspan="2">
+										<h3><?php _e( 'Universal Import Options', 'dsgnwrks' ); ?></h3>
+										<p><?php _e( 'Please select the general import options below.', 'dsgnwrks' ); ?></p>
+									</th>
+								</tr>
+								<tr valign="top">
+									<th scope="row"><strong><?php _e( 'Set Auto-import Frequency:', 'dsgnwrks' ); ?></strong></th>
+									<td>
+
+										<select id="<?php echo $this->optkey; ?>-frequency" name="<?php echo $this->optkey; ?>[frequency]">
+											<option value="never" <?php echo selected( $opts['frequency'], 'never' ); ?>><?php _e( 'Manual', 'dsgnwrks' ); ?></option>
+											<?php
+											foreach ( $schedules as $key => $value ) {
+												echo '<option value="'. $key .'"'. selected( $opts['frequency'], $key, false ) .'>'. $value['display'] .'</option>';
+											}
+											?>
+										</select>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<p class="submit">
+							<input type="submit" name="save" class="button-primary save" value="<?php _e( 'Save', 'dsgnwrks' ) ?>" />
+						</p>
+
+					</div>
 					</form>
 
 					<?php

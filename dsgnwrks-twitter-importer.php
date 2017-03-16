@@ -23,14 +23,44 @@ class DsgnWrksTwitter {
 	protected $tw          = false;
 	protected $plugin_page;
 
-	function __construct() {
+	protected static $single_instance = null;
+
+	/**
+	 * Creates or returns an instance of this class.
+	 * @since  0.1.0
+	 * @return DsgnWrksTwitter A single instance of this class.
+	 */
+	public static function get_instance() {
+		if ( null === self::$single_instance ) {
+			self::$single_instance = new self();
+		}
+
+		return self::$single_instance;
+	}
+
+	protected function __construct() {
 
 		// i18n
 		load_plugin_textdomain( 'dsgnwrks', false, dirname( plugin_basename( __FILE__ ) ) );
 
 		add_action( 'admin_init', array( $this, 'init' ) );
+		add_action( 'admin_init', array( $this, 'schedule_frequency_cron' ) );
+
+		add_action( 'dsgnwrks_tweet_cron', array( $this, 'cron_import' ) );
+
 		add_action( 'admin_menu', array( $this, 'admin_setup' ) );
 		add_action( 'current_screen', array( $this, 'redirect' ) );
+		add_action( 'all_admin_notices', array( $this, 'show_cron_notice' ) );
+
+		// @DEV adds a minutely schedule for testing cron
+		// add_filter( 'cron_schedules', function( $schedules ) {
+		// 	$schedules['minutely'] = array(
+		// 		'interval' => 60,
+		// 		'display'  => 'Once Every Minute'
+		// 	);
+		// 	return $schedules;
+		// } );
+
 		// Load the plugin settings link shortcut.
 		add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( __FILE__ ) . 'dsgnwrks-twitter-importer.php' ), array( $this, 'settings_link' ) );
 
@@ -56,11 +86,6 @@ class DsgnWrksTwitter {
 
 
 	public function init() {
-
-		if ( isset( $_GET['tweetimport'] ) ) {
-			set_transient( sanitize_title( urldecode( $_GET['tweetimport'] ) ) .'-tweetimportdone', date_i18n( 'l F jS, Y @ h:i:s A', strtotime( current_time('mysql') ) ), 14400 );
-		}
-
 		register_setting(
 			'dsgnwrks_twitter_importer_users',
 			$this->pre.'registration',
@@ -71,6 +96,53 @@ class DsgnWrksTwitter {
 			$this->optkey,
 			array( $this, 'settings_validate' )
 		);
+	}
+
+	/**
+	 * If a frequency has been set, schedule the import
+	 */
+	public function schedule_frequency_cron() {
+		$frequency = $this->options( 'frequency' );
+
+		// if a auto-import frequency interval was saved,
+		if ( $frequency && 'never' !== $frequency && ! wp_next_scheduled( 'dsgnwrks_tweet_cron' ) ) {
+			// schedule a cron to pull updates from instagram
+			wp_schedule_event( time(), $frequency, 'dsgnwrks_tweet_cron' );
+		}
+	}
+
+	public function remove_cron_events() {
+		if ( $timestamp = wp_next_scheduled( 'dsgnwrks_tweet_cron' ) ) {
+			wp_clear_scheduled_hook( 'dsgnwrks_tweet_cron' );
+		}
+	}
+
+	/**
+	 * Hooks to 'all_admin_notices' and displays auto-imported photo messages
+	 */
+	function show_cron_notice() {
+
+		// check if we have any saved notices from our cron auto-import
+		$notices = get_option( 'dsgnwrks_imported_tweets_notices' );
+		if ( empty( $notices ) ) {
+			return;
+		}
+
+		foreach ( $notices as $userid => $status ) {
+			foreach ( $status as $message_status => $notice ) {
+				echo '<div id="message" class="is-dismissible notice '. ( 1 === $message_status ? 'updated' : 'error' ) .'">';
+				echo '<h3>'. $userid .' &mdash; '. __( 'imported:', 'dsgnwrks' ) .' '. date_i18n( 'l F jS, Y @ h:i:s A', $notice['time'] ) .'</h3>';
+				if ( is_array( $notice['notice'] ) ) {
+					echo implode( 1 === $message_status ? "\n" : '<br>', $notice['notice'] );
+				} else {
+					echo $notice['notice'];
+				}
+				echo '</div>';
+			}
+		}
+
+		// reset notices
+		delete_option( 'dsgnwrks_imported_tweets_notices' );
 	}
 
 	public function users_validate( $opts ) {
@@ -106,10 +178,17 @@ class DsgnWrksTwitter {
 
 	public function settings_validate( $opts ) {
 
-		if ( empty( $opts ) ) return;
+		if ( empty( $opts ) ) {
+			return;
+		}
+
+		$this->remove_cron_events();
+
 		foreach ( $opts as $user => $useropts ) {
-			if ( $user == 'username' ) continue;
-			foreach ( $useropts as $key => $opt ) {
+			if ( $user == 'username' ) {
+				continue;
+			}
+			foreach ( (array) $useropts as $key => $opt ) {
 
 				if ( $key === 'date-filter' ) {
 					if ( empty( $opts[$user]['mm'] ) && empty( $opts[$user]['dd'] ) && empty( $opts[$user]['yy'] ) || !empty( $opts[$user]['remove-date-filter'] ) ) {
@@ -135,8 +214,6 @@ class DsgnWrksTwitter {
 
 			}
 		}
-
-		// wp_die( '<pre>'. htmlentities( print_r( $opts, true ) ) .'</pre>' );
 
 		return $opts;
 	}
@@ -164,17 +241,30 @@ class DsgnWrksTwitter {
 		if ( !empty( $data ) ) wp_localize_script( 'dw-twitter-admin', 'dwtwitter', $data );
 	}
 
-	public function fire_importer() {
-		if ( isset( $_GET['tweetimport'] ) && isset( $_POST[$this->optkey]['username'] ) ) {
-			add_action( 'all_admin_notices', array( $this, 'import' ) );
+	public function cron_import() {
+		foreach ( $this->options() as $user => $useropts ) {
+			if ( isset( $useropts['auto_import'] ) && $useropts['auto_import'] == 'yes' ) {
+				$this->import( $user, wp_create_nonce( 'tweetimport-nonce' ), true );
+			}
 		}
 	}
 
-	public function import() {
+	public function fire_importer() {
+		if ( isset( $_REQUEST['tweetimport'], $_POST[$this->optkey]['username'], $_POST['dw-tweetimporter'] ) ) {
+			add_action( 'all_admin_notices', array( $this, 'maybe_import' ) );
+		}
+	}
 
+	public function maybe_import() {
+		$this->import( sanitize_text_field( $_POST[ $this->optkey ]['username'] ), $_POST['dw-tweetimporter'] );
+	}
+
+	public function import( $user_id, $nonce_val, $doing_cron = false ) {
 		$opts = $this->options();
-		$id = $_POST[$this->optkey]['username'];
-		if ( !isset( $_GET['tweetimport'] ) || empty( $id ) ) return;
+
+		if ( empty( $user_id ) || empty( $opts[ $user_id ] ) || ! wp_verify_nonce( $nonce_val, 'tweetimport-nonce' ) ) {
+			return false;
+		}
 
 		$twitterwp = $this->twitterwp();
 
@@ -184,13 +274,17 @@ class DsgnWrksTwitter {
 		// If no override, proceed as usual
 		if ( null === $tweets ) {
 			// @TODO https://dev.twitter.com/docs/working-with-timelines
-			$tweets = $twitterwp->get_tweets( $id, 200 );
+			$tweets = $twitterwp->get_tweets( $user_id, 200 );
 		}
 
 		if ( is_wp_error( $tweets ) ) {
-			echo '<div id="message" class="error"><p>'. implode( '<br/>', $tweets->get_error_messages( 'twitterwp_error' ) ) . '</p></div>';
+			if ( $doing_cron ) {
+				$this->add_notices( $tweets->get_error_messages( 'twitterwp_error' ), $user_id, false );
+			} else {
+				echo '<div id="message" class="error"><p>'. implode( '<br/>', $tweets->get_error_messages( 'twitterwp_error' ) ) . '</p></div>';
+			}
 
-			$opts[$id]['noauth'] = true;
+			$opts[$user_id]['noauth'] = true;
 			$this->update_options( $opts );
 			return;
 		}
@@ -198,29 +292,61 @@ class DsgnWrksTwitter {
 		// pre-import filter
 		$tweets = apply_filters( 'dw_twitter_api', $tweets );
 
-		echo '<div id="message" class="updated">';
-
 		$tz = get_option( 'timezone_string' );
 		if ( $tz ) {
 			$pre = date('e');
 			date_default_timezone_set( $tz );
 		}
 
-		$messages = $this->messages( $tweets, $opts[$id] );
+		$messages = $this->messages( $tweets, $opts[$user_id] );
 
-		while ( !empty( $messages['next_url'] ) ) {
-			$messages = $this->messages( $messages['next_url'], $opts[$id], $messages['message'] );
-		}
-
-		foreach ( $messages['message'] as $key => $message ) {
-			echo $message;
+		while ( ! empty( $messages['next_url'] ) ) {
+			$messages = $this->messages( $messages['next_url'], $opts[$user_id], $messages['message'] );
 		}
 
 		if ( $tz ) {
 			date_default_timezone_set( $pre );
 		}
 
-		echo '</div>';
+		$opts[$user_id]['lastimport'] = strtotime( current_time('mysql') );
+
+		$this->update_options( $opts );
+
+		if ( $doing_cron ) {
+			$to_store = array();
+
+			foreach ( $messages['message'] as $key => $message ) {
+				if ( false === stripos( $message, 'No new tweets to import' ) ) {
+					$to_store[] = $message;
+				}
+			}
+
+			$this->add_notices( $to_store, $user_id );
+		} else {
+			echo '<div id="message" class="updated">' . implode( "\n", $messages['message'] ) . '</div>';
+		}
+	}
+
+	protected function add_notices( $to_store, $user_id, $success = true ) {
+		// Save our imported notices to an option to be displayed later
+		if ( empty( $to_store ) ) {
+			return;
+		}
+
+		$time = strtotime( current_time('mysql') );
+
+		// check if we already have some notices saved
+		$notices = get_option( 'dsgnwrks_imported_tweets_notices' );
+		$notices = is_array( $notices ) ? $notices : array();
+
+		// if so, add to them
+		if ( is_array( $notices ) ) {
+			$notices[ $user_id ][ $success ? 1 : 0 ] = array( 'notice' => $to_store, 'time' => $time );
+		// if not, create a new one
+		}
+
+		// save our option
+		update_option( 'dsgnwrks_imported_tweets_notices', $notices, false );
 	}
 
 	protected function messages( $tweets, $opts, $prevmessages = array() ) {
@@ -516,7 +642,8 @@ class DsgnWrksTwitter {
 
 }
 
-new DsgnWrksTwitter;
+DsgnWrksTwitter::get_instance();
+
 
 if ( ! function_exists( 'wp_trim_words' ) ) {
 	function wp_trim_words( $text, $num_words = 55, $more = null ) {
@@ -535,3 +662,15 @@ if ( ! function_exists( 'wp_trim_words' ) ) {
 		return apply_filters( 'wp_trim_words', $text, $num_words, $more, $original_text );
 	}
 }
+
+
+function dsgnwrkstwitter_deactivate() {
+	$tw = DsgnWrksTwitter::get_instance();
+
+	if ( ! current_user_can( 'activate_plugins' ) || ! isset( $tw->pre ) ) {
+		return;
+	}
+
+	$tw->remove_cron_events();
+}
+register_deactivation_hook( __FILE__, 'dsgnwrkstwitter_deactivate' );
