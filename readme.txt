@@ -1,18 +1,18 @@
 === Plugin Name ===
 DsgnWrks Twitter Importer
 
-Contributors: jtsternberg  
-Plugin Name: DsgnWrks Twitter Importer  
-Plugin URI: http://dsgnwrks.pro/plugins/dsgnwrks-twitter-importer  
-Tags: twitter, tweets, import, backup, importer  
-Author URI: http://about.me/jtsternberg  
-Author: Jtsternberg  
-Donate link: http://j.ustin.co/rYL89n  
-Requires at least: 3.1  
-Tested up to: 4.2.2    
-Version: 1.1.1  
-License: GPLv2 or later  
-License URI: http://www.gnu.org/licenses/gpl-2.0.html  
+Contributors: jtsternberg
+Plugin Name: DsgnWrks Twitter Importer
+Plugin URI: http://dsgnwrks.pro/plugins/dsgnwrks-twitter-importer
+Tags: twitter, tweets, import, backup, importer
+Author URI: http://about.me/jtsternberg
+Author: Jtsternberg
+Donate link: http://j.ustin.co/rYL89n
+Requires at least: 3.1
+Tested up to: 4.2.2
+Version: 1.1.2
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Backup your tweets & display your twitter archive. Supports importing to custom post-types & adding custom taxonomies.
 
@@ -47,7 +47,10 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 == Changelog ==
 
-= 1.1.0 =
+= 1.1.2 =
+* Update the TwitterWP library to fix url encoding issues.
+
+= 1.1.1 =
 * Add `dw_twitter_api_get_tweets` filter for overriding the TwitterWP method for getting tweets. This enables importing from favorites/lists, etc.
 
 = 1.1.0 =
@@ -65,7 +68,10 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 == Upgrade Notice ==
 
-= 1.1.0 =
+= 1.1.2 =
+* Update the TwitterWP library to fix url encoding issues.
+
+= 1.1.1 =
 * Add `dw_twitter_api_get_tweets` filter for overriding the TwitterWP method for getting tweets. This enables importing from favorites/lists, etc.
 
 = 1.1.0 =
