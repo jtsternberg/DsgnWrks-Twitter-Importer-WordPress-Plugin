@@ -244,7 +244,6 @@ class DsgnWrksTwitter {
 	}
 
 	protected function loop( $tweets = array(), $opts = array() ) {
-
 		foreach ( $tweets as $tweet ) {
 
 			if ( $opts['date-filter'] > strtotime( $tweet->created_at ) ) {
@@ -275,6 +274,7 @@ class DsgnWrksTwitter {
 					)
 				)
 			);
+
 			if ( $alreadyInSystem->have_posts() ) {
 				continue;
 			}
@@ -297,6 +297,9 @@ class DsgnWrksTwitter {
 
 		$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
 
+		// Format tweet (hashtags, links, etc)
+		$tweet_text = self::twitter_linkify( $tweet_text, $tweet );
+
 		$post = array(
 		  'post_author' => $opts['author'],
 		  'post_content' => $tweet_text,
@@ -306,6 +309,7 @@ class DsgnWrksTwitter {
 		  'post_title' => wp_trim_words( $tweet_text, 20, '' ),
 		  'post_type' => $opts['post-type'],
 		);
+
 		$new_post_id = wp_insert_post( $post, true );
 
 		apply_filters( 'dw_twitter_post_save', $new_post_id, $tweet );
@@ -363,6 +367,33 @@ class DsgnWrksTwitter {
 			update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 
 		return '<p><strong><em>&ldquo;'. wp_trim_words( strip_tags( $tweet->text ), 10 ) .'&rdquo; </em> imported and created successfully.</strong></p>';
+	}
+
+	/**
+	 * Parses tweets and generates HTML anchor tags around URLs, usernames,
+	 * username/list pairs and hashtags.
+	 *
+	 * @link https://github.com/mzsanford/twitter-text-php
+	 *
+	 * @since  0.1.0
+	 * @param  string $content Tweet content
+	 * @return string          Modified tweet content
+	 */
+	public static function twitter_linkify( $content, $tweet ) {
+
+		// Include the Twitter-Text-PHP library
+		if ( ! class_exists( 'Twitter_Regex' ) ) {
+			require_once( _DWTW_PATH .'DW_Twitter_Autolink.php' );
+		}
+
+		return DW_Twitter_Autolink::create( $content, true )
+			->setTweet( $tweet )
+			->setNoFollow( false )->setExternal( true )->setTarget( '_blank' )
+			->setUsernameClass( 'tweet-url username' )
+			->setListClass( 'tweet-url list-slug' )
+			->setHashtagClass( 'tweet-url hashtag' )
+			->setURLClass( 'tweet-url tweek-link' )
+			->addLinks();
 	}
 
 	public function redirect() {
