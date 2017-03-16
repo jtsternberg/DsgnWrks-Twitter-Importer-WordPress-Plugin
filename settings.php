@@ -243,7 +243,7 @@ if ( !empty( $users ) && is_array( $users ) ) {
 								?>
 								<tr valign="top"<?php echo $interval == 'Manual' ? ' class="disabled"' : ''; ?>>
 								<th scope="row">
-									<strong><?php _e( 'Auto-import future photos:', 'dsgnwrks' ); ?></strong><br/>
+									<strong><?php _e( 'Auto-import future tweets:', 'dsgnwrks' ); ?></strong><br/>
 									<?php if ( $interval == 'Manual' ) { ?>
 										<em><?php _e( 'Change import interval from "Manual" in the "Plugin Options" tab for this option to take effect.', 'dsgnwrks' ); ?></em>
 									<?php } else {

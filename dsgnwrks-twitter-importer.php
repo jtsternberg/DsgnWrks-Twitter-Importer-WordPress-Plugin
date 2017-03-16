@@ -12,6 +12,9 @@ Version: 1.1.3
 define( '_DWTW_PATH', plugin_dir_path( __FILE__ ) );
 define( '_DWTW_URL', plugins_url('/', __FILE__ ) );
 
+/**
+ * TODO: Implement max_id parameter querying: https://dev.twitter.com/rest/public/timelines
+ */
 class DsgnWrksTwitter {
 
 	protected $plugin_name = 'DsgnWrks Twitter Importer';
@@ -118,7 +121,7 @@ class DsgnWrksTwitter {
 	}
 
 	/**
-	 * Hooks to 'all_admin_notices' and displays auto-imported photo messages
+	 * Hooks to 'all_admin_notices' and displays auto-imported tweet messages
 	 */
 	function show_cron_notice() {
 
