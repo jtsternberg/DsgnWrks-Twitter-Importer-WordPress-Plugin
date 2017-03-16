@@ -398,15 +398,7 @@ class DsgnWrksTwitter {
 		$message = $message ? $message : '<p>Click to be taken to Twitter\'s site to securely authorize this plugin for use with your account.</p><p><em>(If you have already authorized an account, You will first be logged out of Twitter.)</em></p>';
 		?>
 		<form class="twitter-importer" method="post" action="options.php">
-			<?php
-			settings_fields( 'dsgnwrks_twitter_importer_users' );
-			// echo $message;
-			// $class = !empty( $users ) ? 'logout' : '';
-			?>
-			<!-- <p class="submit">
-				<input type="submit" name="save" class="button-primary authenticate <?php echo $class; ?>" value="<?php _e( 'Secure Authentication with Instagram' ) ?>" />
-			</p> -->
-
+			<?php settings_fields( 'dsgnwrks_twitter_importer_users' ); ?>
 			<table class="form-table">
 				<p><?php echo $message; ?></p>
 				<tr valign="top">
