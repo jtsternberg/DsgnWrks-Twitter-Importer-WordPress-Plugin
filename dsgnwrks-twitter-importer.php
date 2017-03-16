@@ -303,7 +303,7 @@ class DsgnWrksTwitter {
 		  'post_date' => $post_date,
 		  'post_date_gmt' => $post_date,
 		  'post_status' => $opts['draft'],
-		  'post_title' => $post_date,
+		  'post_title' => wp_trim_words( $tweet_text, 20, '' ),
 		  'post_type' => $opts['post-type'],
 		);
 		$new_post_id = wp_insert_post( $post, true );
