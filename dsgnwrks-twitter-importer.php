@@ -314,7 +314,9 @@ class DsgnWrksTwitter {
 		$taxes = get_taxonomies( array( 'public' => true ), 'objects' );
 		foreach ( $taxes as $key => $tax ) {
 
-			if ( $tax->label == 'Format' && !current_theme_supports( 'post-formats' ) ) continue;
+			// if ( $tax->label == 'Format' && !current_theme_supports( 'post-formats' ) ) {
+			// 	continue;
+			// }
 
 			$opts[$tax->name] = !empty( $opts[$tax->name] ) ? esc_attr( $opts[$tax->name] ) : '';
 
