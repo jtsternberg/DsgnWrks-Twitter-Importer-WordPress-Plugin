@@ -277,7 +277,7 @@ class DsgnWrksTwitter {
 		// If no override, proceed as usual
 		if ( null === $tweets ) {
 			// @TODO https://dev.twitter.com/docs/working-with-timelines
-			$tweets = $twitterwp->get_tweets( $user_id, 200 );
+			$tweets = $twitterwp->get_tweets( $user_id, 200, array( 'tweet_mode' => 'extended' ) );
 		}
 
 		if ( is_wp_error( $tweets ) ) {
@@ -385,7 +385,7 @@ class DsgnWrksTwitter {
 				$in_title = false;
 				if ( $tags ) {
 				    foreach ($tags as $tag) {
-				        if ( strpos( $tweet->text, '#'.$tag ) ) $in_title = true;
+				        if ( strpos( $tweet->full_text, '#'.$tag ) ) $in_title = true;
 				    }
 				}
 
@@ -424,7 +424,7 @@ class DsgnWrksTwitter {
 
 		$post_date = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) );
 
-		$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->text ) : $tweet->text;
+		$tweet_text = apply_filters( 'dw_twitter_clean_tweets', false ) ? iconv( 'UTF-8', 'ISO-8859-1//IGNORE', $tweet->full_text ) : $tweet->full_text;
 
 		// Format tweet (hashtags, links, etc)
 		$tweet_text = self::twitter_linkify( $tweet_text, $tweet );
@@ -495,7 +495,7 @@ class DsgnWrksTwitter {
 		if ( !empty( $tweet->in_reply_to_screen_name ) )
 			update_post_meta( $new_post_id, 'in_reply_to_screen_name', $tweet->in_reply_to_screen_name );
 
-		return '<p><strong><em>&ldquo;'. wp_trim_words( strip_tags( $tweet->text ), 10 ) .'&rdquo; </em> imported and created successfully.</strong></p>';
+		return '<p><strong><em>&ldquo;'. wp_trim_words( strip_tags( $tweet->full_text ), 10 ) .'&rdquo; </em> imported and created successfully.</strong></p>';
 	}
 
 	/**
