@@ -5,12 +5,12 @@ Contributors: jtsternberg
 Plugin Name: DsgnWrks Twitter Importer
 Plugin URI: http://dsgnwrks.pro/plugins/dsgnwrks-twitter-importer
 Tags: twitter, tweets, import, backup, importer
-Author URI: http://about.me/jtsternberg
+Author URI: https://dsgnwrks.pro/about
 Author: Jtsternberg
-Donate link: http://j.ustin.co/rYL89n
+Donate link: https://dsgnwrks.pro/give
 Requires at least: 3.1
-Tested up to: 4.7.1
-Version: 1.1.3
+Tested up to: 5.2.2
+Version: 1.1.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,11 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 == Changelog ==
 
+= 1.1.4 =
+* Import full tweet text by default. Props [oddevan](https://github.com/oddevan), [#2](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/pull/2).
+* Update TwitterText dependency.
+* Fix photo/tweet typo
+
 = 1.1.3 =
 * Add cron/auto-import feature.
 * Use TwitterText lib to parse tweent text and add links, replace urls with tweet entities etc.
@@ -74,6 +79,11 @@ If you run into a problem or have a question, contact me ([contact form](http://
 
 
 == Upgrade Notice ==
+
+= 1.1.4 =
+* Import full tweet text by default. Props [oddevan](https://github.com/oddevan), [#2](https://github.com/jtsternberg/DsgnWrks-Twitter-Importer-WordPress-Plugin/pull/2).
+* Update TwitterText dependency.
+* Fix photo/tweet typo
 
 = 1.1.3 =
 * Add cron/auto-import feature.
