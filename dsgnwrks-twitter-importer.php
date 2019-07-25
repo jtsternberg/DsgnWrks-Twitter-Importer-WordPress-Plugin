@@ -277,7 +277,7 @@ class DsgnWrksTwitter {
 		// If no override, proceed as usual
 		if ( null === $tweets ) {
 			// @TODO https://dev.twitter.com/docs/working-with-timelines
-			$tweets = $twitterwp->get_tweets( $user_id, 200, array( 'tweet_mode' => 'extended' ) );
+			$tweets = $twitterwp->get_tweets( $user_id, 200 );
 		}
 
 		if ( is_wp_error( $tweets ) ) {
@@ -374,6 +374,7 @@ class DsgnWrksTwitter {
 
 	protected function loop( $tweets = array(), $opts = array() ) {
 		foreach ( $tweets as $tweet ) {
+			$tweet->full_text = isset( $tweet->full_text ) ? $tweet->full_text : $tweet->text;
 
 			if ( $opts['date-filter'] > strtotime( $tweet->created_at ) ) {
 				$messages['nexturl'] = 'halt';
